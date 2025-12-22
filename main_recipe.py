@@ -192,7 +192,7 @@ def main():
     for scene in scenes:
         print(f"      Scene {scene['scene_id']}: {scene['audio_text'][:40]}... ({scene.get('duration', 3)}s)")
     print("")
-    
+
     # ==========================================
     # Step 3: Generate Video Title (대본 기반)
     # ==========================================
@@ -214,10 +214,10 @@ def main():
         # 전체 대본을 한 번에 TTS 생성 후 silence 기반 분할
         # → 일관된 톤과 자연스러운 억양 유지
         audio_paths = audio_gen.generate_speech_batch(scenes, output_dir)
-        
+    
         print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
-        total_duration = sum(s['duration'] for s in scenes)
-        print(f"   📏 예상 전체 영상 길이: {total_duration:.2f}초\n")
+    total_duration = sum(s['duration'] for s in scenes)
+    print(f"   📏 예상 전체 영상 길이: {total_duration:.2f}초\n")
         
     except Exception as e:
         print_error(f"오디오 생성 실패: {str(e)}")

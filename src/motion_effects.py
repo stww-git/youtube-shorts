@@ -230,7 +230,7 @@ class MotionEffectsComposer:
                 
                 # Position text: TOP_MARGIN + padding
                 # We want text to start after the TOP_MARGIN
-                text_y_position = TOP_MARGIN + 10  # 10px padding below UI area
+                text_y_position = TOP_MARGIN + 50  # 50px padding below UI area (더 아래로)
                 
                 try:
                     title_clip = title_clip.with_position(('center', text_y_position))
@@ -633,7 +633,7 @@ class MotionEffectsComposer:
                     font=self.font,
                     stroke_color='black', 
                     stroke_width=stroke_width,
-                    size=(850, None),  # Wider for less clipping (was 800)
+                    size=(960, None),  # 좌우 60px 여백 확보 (1080 - 120)
                     method='caption',
                     text_align='center',
                     duration=segment_duration

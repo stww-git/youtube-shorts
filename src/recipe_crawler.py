@@ -101,99 +101,99 @@ class RecipeCrawler:
     def _fetch_recipe_list(self, url: str, count: int, category: str) -> List[Dict]:
         """레시피 목록 페이지 파싱 (재시도 로직 포함)"""
         for attempt in range(1, MAX_RETRIES + 1):
-            try:
+        try:
                 if attempt > 1:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                     time.sleep(RETRY_DELAY)
                 
-                print(f"   🔍 레시피 목록 크롤링 중: {url}")
-                response = self.session.get(url, timeout=10)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
+            print(f"   🔍 레시피 목록 크롤링 중: {url}")
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            recipes = []
+            
+            # 방법 1: li.common_sp_list_li 컨테이너 기반 파싱 (베스트 레시피 페이지)
+            recipe_items = soup.find_all('li', class_='common_sp_list_li')
+            
+            if not recipe_items:
+                # 방법 2: 일반 목록 형태도 시도
+                recipe_items = soup.find_all('li', class_=re.compile(r'(rcp|recipe|list)', re.I))
+            
+            for item in recipe_items:
+                # 레시피 링크 찾기
+                link = item.find('a', href=re.compile(r'^/recipe/\d+$'))
+                if not link:
+                    link = item.find('a', href=re.compile(r'/recipe/\d+'))
                 
-                recipes = []
+                if not link:
+                    continue
                 
-                # 방법 1: li.common_sp_list_li 컨테이너 기반 파싱 (베스트 레시피 페이지)
-                recipe_items = soup.find_all('li', class_='common_sp_list_li')
+                href = link.get('href', '')
+                recipe_match = re.search(r'/recipe/(\d+)', href)
+                if not recipe_match:
+                    continue
                 
-                if not recipe_items:
-                    # 방법 2: 일반 목록 형태도 시도
-                    recipe_items = soup.find_all('li', class_=re.compile(r'(rcp|recipe|list)', re.I))
+                recipe_id = recipe_match.group(1)
                 
-                for item in recipe_items:
-                    # 레시피 링크 찾기
-                    link = item.find('a', href=re.compile(r'^/recipe/\d+$'))
-                    if not link:
-                        link = item.find('a', href=re.compile(r'/recipe/\d+'))
-                    
-                    if not link:
+                # 중복 체크
+                if any(r['recipe_id'] == recipe_id for r in recipes):
+                    continue
+                
+                # 제목 추출 - li 전체 텍스트에서 찾기
+                title = item.get_text(separator=' ', strip=True)
+                
+                # 제목 정리 - 첫 번째 의미있는 텍스트 추출 (숫자/순위 제외)
+                title_parts = title.split()
+                clean_title = []
+                for part in title_parts:
+                    # 순위 숫자, 조회수 등 제외
+                    if part.isdigit() or '조회수' in part or '만' == part:
                         continue
-                    
-                    href = link.get('href', '')
-                    recipe_match = re.search(r'/recipe/(\d+)', href)
-                    if not recipe_match:
-                        continue
-                    
-                    recipe_id = recipe_match.group(1)
-                    
-                    # 중복 체크
-                    if any(r['recipe_id'] == recipe_id for r in recipes):
-                        continue
-                    
-                    # 제목 추출 - li 전체 텍스트에서 찾기
-                    title = item.get_text(separator=' ', strip=True)
-                    
-                    # 제목 정리 - 첫 번째 의미있는 텍스트 추출 (숫자/순위 제외)
-                    title_parts = title.split()
-                    clean_title = []
-                    for part in title_parts:
-                        # 순위 숫자, 조회수 등 제외
-                        if part.isdigit() or '조회수' in part or '만' == part:
-                            continue
-                        clean_title.append(part)
-                        if len(' '.join(clean_title)) > 30:
-                            break
-                    
-                    title = ' '.join(clean_title)
-                    
-                    # 유효성 검사
-                    if not title or len(title) < 5:
-                        continue
-                    
-                    # 불필요한 항목 필터링
-                    if '구매' in title or '로그인' in title or title.startswith('http'):
-                        continue
-                    
-                    recipes.append({
-                        "recipe_id": recipe_id,
-                        "title": title[:80],  # 80자 제한
-                        "url": f"{self.BASE_URL}/recipe/{recipe_id}",
-                        "category": category
-                    })
-                    
-                    if len(recipes) >= count:
+                    clean_title.append(part)
+                    if len(' '.join(clean_title)) > 30:
                         break
                 
-                # 방법 3: 컨테이너가 없으면 직접 링크에서 추출 + 상세 페이지에서 제목 가져오기
-                if not recipes:
-                    links = soup.find_all('a', href=re.compile(r'^/recipe/\d+$'))
-                    for link in links[:min(count, 20)]:  # 최대 20개
-                        href = link.get('href', '')
-                        recipe_match = re.search(r'/recipe/(\d+)', href)
-                        if recipe_match:
-                            recipe_id = recipe_match.group(1)
-                            if not any(r['recipe_id'] == recipe_id for r in recipes):
-                                recipes.append({
-                                    "recipe_id": recipe_id,
-                                    "title": "",  # 나중에 상세 페이지에서 채움
-                                    "url": f"{self.BASE_URL}/recipe/{recipe_id}",
-                                    "category": category
-                                })
+                title = ' '.join(clean_title)
                 
-                print(f"   ✅ {len(recipes)}개 레시피 발견")
-                return recipes
+                # 유효성 검사
+                if not title or len(title) < 5:
+                    continue
                 
-            except Exception as e:
+                # 불필요한 항목 필터링
+                if '구매' in title or '로그인' in title or title.startswith('http'):
+                    continue
+                
+                recipes.append({
+                    "recipe_id": recipe_id,
+                    "title": title[:80],  # 80자 제한
+                    "url": f"{self.BASE_URL}/recipe/{recipe_id}",
+                    "category": category
+                })
+                
+                if len(recipes) >= count:
+                    break
+            
+            # 방법 3: 컨테이너가 없으면 직접 링크에서 추출 + 상세 페이지에서 제목 가져오기
+            if not recipes:
+                links = soup.find_all('a', href=re.compile(r'^/recipe/\d+$'))
+                for link in links[:min(count, 20)]:  # 최대 20개
+                    href = link.get('href', '')
+                    recipe_match = re.search(r'/recipe/(\d+)', href)
+                    if recipe_match:
+                        recipe_id = recipe_match.group(1)
+                        if not any(r['recipe_id'] == recipe_id for r in recipes):
+                            recipes.append({
+                                "recipe_id": recipe_id,
+                                "title": "",  # 나중에 상세 페이지에서 채움
+                                "url": f"{self.BASE_URL}/recipe/{recipe_id}",
+                                "category": category
+                            })
+            
+            print(f"   ✅ {len(recipes)}개 레시피 발견")
+            return recipes
+            
+        except Exception as e:
                 if attempt < MAX_RETRIES:
                     logger.warning(f"레시피 목록 크롤링 실패 (시도 {attempt}/{MAX_RETRIES}): {e}")
                     print(f"   ⚠️  크롤링 실패, 재시도 대기 중... ({RETRY_DELAY}초)")
@@ -201,78 +201,78 @@ class RecipeCrawler:
                     logger.error(f"레시피 목록 크롤링 실패 ({MAX_RETRIES}회 시도 후): {e}")
                     print(f"   ❌ 크롤링 실패: {e}")
         
-        return []
+            return []
     
     def get_recipe_detail(self, recipe_id: str) -> Optional[Dict]:
         """레시피 상세 정보 가져오기 (재시도 로직 포함)"""
         url = f"{self.BASE_URL}/recipe/{recipe_id}"
         
         for attempt in range(1, MAX_RETRIES + 1):
-            try:
+        try:
                 if attempt > 1:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                     time.sleep(RETRY_DELAY)
                 
-                print(f"   📖 레시피 상세 크롤링: {url}")
-                response = self.session.get(url, timeout=10)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # 제목
-                title_elem = soup.find('div', class_='view2_summary')
-                title = ""
-                if title_elem:
-                    h3 = title_elem.find('h3')
-                    title = h3.get_text(strip=True) if h3 else ""
-                
-                # OG description에서 요약 추출
-                og_desc = soup.find('meta', property='og:description')
-                description = og_desc.get('content', '') if og_desc else ""
-                
-                # 재료 목록
-                ingredients = []
-                ing_list = soup.find('div', class_='ready_ingre3')
-                if ing_list:
-                    for li in ing_list.find_all('li'):
-                        name_elem = li.find('a') or li
-                        name = name_elem.get_text(strip=True)
-                        # 양 추출
-                        amount_elem = li.find('span', class_='ingre_unit')
-                        amount = amount_elem.get_text(strip=True) if amount_elem else ""
-                        if name and not name.startswith('구매'):
-                            ingredients.append({"name": name, "amount": amount})
-                
-                # 조리 단계
-                steps = []
-                step_list = soup.find_all('div', class_='view_step_cont')
-                for idx, step_div in enumerate(step_list, 1):
-                    step_text = step_div.get_text(strip=True)
-                    if step_text:
-                        steps.append({"step": idx, "description": step_text})
-                
-                # 조리 단계가 없으면 description에서 추출 시도
-                if not steps and description:
-                    # description을 문장으로 분리하여 단계 생성
-                    sentences = re.split(r'(?<=[.!?])\s+', description)
-                    for idx, sent in enumerate(sentences[:8], 1):
-                        if len(sent) > 10:
-                            steps.append({"step": idx, "description": sent})
-                
-                result = {
-                    "recipe_id": recipe_id,
-                    "title": title,
-                    "url": url,
-                    "description": description,
-                    "ingredients": ingredients,
-                    "steps": steps
-                }
-                
-                print(f"   ✅ 레시피 상세 로드 완료: {title}")
-                print(f"      재료: {len(ingredients)}개, 조리단계: {len(steps)}개")
-                
-                return result
-                
-            except Exception as e:
+            print(f"   📖 레시피 상세 크롤링: {url}")
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 제목
+            title_elem = soup.find('div', class_='view2_summary')
+            title = ""
+            if title_elem:
+                h3 = title_elem.find('h3')
+                title = h3.get_text(strip=True) if h3 else ""
+            
+            # OG description에서 요약 추출
+            og_desc = soup.find('meta', property='og:description')
+            description = og_desc.get('content', '') if og_desc else ""
+            
+            # 재료 목록
+            ingredients = []
+            ing_list = soup.find('div', class_='ready_ingre3')
+            if ing_list:
+                for li in ing_list.find_all('li'):
+                    name_elem = li.find('a') or li
+                    name = name_elem.get_text(strip=True)
+                    # 양 추출
+                    amount_elem = li.find('span', class_='ingre_unit')
+                    amount = amount_elem.get_text(strip=True) if amount_elem else ""
+                    if name and not name.startswith('구매'):
+                        ingredients.append({"name": name, "amount": amount})
+            
+            # 조리 단계
+            steps = []
+            step_list = soup.find_all('div', class_='view_step_cont')
+            for idx, step_div in enumerate(step_list, 1):
+                step_text = step_div.get_text(strip=True)
+                if step_text:
+                    steps.append({"step": idx, "description": step_text})
+            
+            # 조리 단계가 없으면 description에서 추출 시도
+            if not steps and description:
+                # description을 문장으로 분리하여 단계 생성
+                sentences = re.split(r'(?<=[.!?])\s+', description)
+                for idx, sent in enumerate(sentences[:8], 1):
+                    if len(sent) > 10:
+                        steps.append({"step": idx, "description": sent})
+            
+            result = {
+                "recipe_id": recipe_id,
+                "title": title,
+                "url": url,
+                "description": description,
+                "ingredients": ingredients,
+                "steps": steps
+            }
+            
+            print(f"   ✅ 레시피 상세 로드 완료: {title}")
+            print(f"      재료: {len(ingredients)}개, 조리단계: {len(steps)}개")
+            
+            return result
+            
+        except Exception as e:
                 if attempt < MAX_RETRIES:
                     logger.warning(f"레시피 상세 크롤링 실패 (시도 {attempt}/{MAX_RETRIES}): {e}")
                     print(f"   ⚠️  크롤링 실패, 재시도 대기 중... ({RETRY_DELAY}초)")
@@ -280,7 +280,7 @@ class RecipeCrawler:
                     logger.error(f"레시피 상세 크롤링 실패 ({MAX_RETRIES}회 시도 후): {e}")
                     print(f"   ❌ 크롤링 실패: {e}")
         
-        return None
+            return None
     
     def get_next_recipe(self) -> Optional[Dict]:
         """

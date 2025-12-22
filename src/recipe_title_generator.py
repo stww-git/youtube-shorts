@@ -36,7 +36,7 @@ class RecipeTitleGenerator:
     def get_api_call_count(self):
         """Return total API calls made."""
         return self.api_call_count
-
+    
     def generate_title(self, recipe: dict, scenes: list = None) -> str:
         """
         대본 내용을 바탕으로 바이럴 제목을 생성합니다.
