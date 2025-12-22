@@ -216,8 +216,8 @@ def main():
         audio_paths = audio_gen.generate_speech_batch(scenes, output_dir)
     
         print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
-    total_duration = sum(s['duration'] for s in scenes)
-    print(f"   📏 예상 전체 영상 길이: {total_duration:.2f}초\n")
+        total_duration = sum(s['duration'] for s in scenes)
+        print(f"   📏 예상 전체 영상 길이: {total_duration:.2f}초\n")
         
     except Exception as e:
         print_error(f"오디오 생성 실패: {str(e)}")
