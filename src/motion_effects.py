@@ -661,20 +661,53 @@ class MotionEffectsComposer:
             if not text:
                 return clip
             
-            # Split text into sentences by ., ?, !
-            import re
-            sentences = re.split(r'(?<=[.?!])\s+', text)
-            sentences = [s.strip() for s in sentences if s.strip()]
+            # --- 1. Smart Text Splitting (문장부호 + 길이 기반 분할) ---
+            # 목표: 한 화면에 한 줄만 나오도록 적절히 자르기
             
-            if not sentences:
+            # 1차: 문장부호로 분리 (. ? ! ,) - 쉼표도 분기점으로 활용
+            import re
+            # 정규식: 문장부호(.?!,) 뒤의 공백에서 분리, 문장부호는 앞 문장에 포함
+            raw_segments = re.split(r'(?<=[.?!,])\s+', text)
+            raw_segments = [s.strip() for s in raw_segments if s.strip()]
+            
+            final_segments = []
+            MAX_CHARS = 20  # 한 줄 권장 글자수
+            
+            for seg in raw_segments:
+                if len(seg) <= MAX_CHARS + 5:  # 약간의 여유 허용
+                    final_segments.append(seg)
+                else:
+                    # 2차: 너무 긴 문장은 어절 단위로 반으로 가름
+                    words = seg.split()
+                    mid = len(words) // 2
+                    part1 = " ".join(words[:mid])
+                    part2 = " ".join(words[mid:])
+                    if part1: final_segments.append(part1)
+                    if part2: final_segments.append(part2)
+            
+            if not final_segments:
                 return clip
+
+            # --- 2. Proportional Duration Calculation (글자수 비례 시간 배분) ---
+            # 공백 제외 글자수 계산 (한글은 글자수 비례가 싱크에 더 정확함)
+            segment_lengths = [len(s.replace(" ", "")) for s in final_segments]
+            total_length = sum(segment_lengths)
+            
+            if total_length == 0:
+                total_length = 1 # avoid divide by zero
             
             subtitle_clips = []
-            num_sentences = len(sentences)
-            sentence_duration = duration / num_sentences
             current_time = 0
             
-            for sentence in sentences:
+            for i, sentence in enumerate(final_segments):
+                # 비례 배분: (내 글자수 / 전체 글자수) * 전체 시간
+                char_ratio = segment_lengths[i] / total_length
+                seg_duration = duration * char_ratio
+                
+                # 최소 시간 보장 (너무 짧은 경우) - 단, 전체 시간이 짧으면 비율대로
+                if duration > 1.5 and seg_duration < 0.5:
+                     seg_duration = max(0.2, seg_duration)
+
                 is_impactful = is_impact_text(sentence)
                 style = get_subtitle_style(is_impactful)
                 
@@ -682,9 +715,9 @@ class MotionEffectsComposer:
                 img_array = self._create_subtitle_image(sentence, style)
                 
                 if img_array is not None:
-                    txt_clip = ImageClip(img_array).with_duration(sentence_duration)
+                    txt_clip = ImageClip(img_array).with_duration(seg_duration)
                     
-                    # Fixed position (안정적인 위치)
+                    # Fixed position
                     try:
                         txt_clip = txt_clip.with_position(('center', SUBTITLE_Y_POSITION))
                     except AttributeError:
@@ -698,7 +731,7 @@ class MotionEffectsComposer:
                     
                     subtitle_clips.append(txt_clip)
                 
-                current_time += sentence_duration
+                current_time += seg_duration
             
             if subtitle_clips:
                 return CompositeVideoClip([clip] + subtitle_clips)

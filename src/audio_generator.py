@@ -192,10 +192,10 @@ class AudioGenerator:
                 except Exception:
                     pass
         
-        # 1. 전체 텍스트 조합 (문장 사이에 긴 쉼표 추가)
-        # "..." 사용으로 TTS가 더 긴 pause 생성 → silence 감지 정확도 향상
+        # 1. 전체 텍스트 조합
+        # 문장 사이에 확실한 마침표와 공백을 추가하여 TTS가 명확히 쉬어가도록 유도
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = "... ".join(texts) + "."
+        full_text = ". ".join(texts) + "."
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
         print(f"   총 {len(scenes)}개 문장을 한 번에 생성합니다")
@@ -245,15 +245,17 @@ class AudioGenerator:
         # 3. Silence 기반 분할
         print(f"\n   ✂️  [오디오 분할 시작]")
         
-        # 텍스트 길이 비율 계산을 위해 텍스트 목록 전달
+        # 텍스트 길이와 예상 시간 정보 추출
         texts = [scene['audio_text'].strip() for scene in scenes]
         text_lengths = [len(t) for t in texts]
+        expected_durations = [scene.get('duration', 0) for scene in scenes]
         
         audio_paths = self._split_audio_by_silence(
             temp_full_audio, 
             output_dir, 
             len(scenes),
-            text_lengths
+            text_lengths=text_lengths,
+            expected_durations=expected_durations
         )
         
         # 4. 임시 파일 삭제
@@ -275,15 +277,16 @@ class AudioGenerator:
         
         return audio_paths
     
-    def _split_audio_by_silence(self, audio_path: str, output_dir: str, expected_chunks: int, text_lengths: list = None):
+    def _split_audio_by_silence(self, audio_path: str, output_dir: str, expected_chunks: int, text_lengths: list = None, expected_durations: list = None):
         """
-        Silence 기반으로 오디오 분할. 실패 시 텍스트 길이 비율로 분할.
+        Silence 기반으로 오디오 분할. 실패 시 예상 시간(또는 텍스트 길이) 비율로 분할.
         
         Args:
             audio_path: 전체 오디오 파일 경로
             output_dir: 출력 디렉토리
             expected_chunks: 예상 분할 개수
-            text_lengths: 각 청크에 해당하는 텍스트 길이 목록 (비율 계산용)
+            text_lengths: 각 청크에 해당하는 텍스트 길이 목록 (비율 계산용 Fallback 2순위)
+            expected_durations: 각 청크에 해당하는 예상 시간 목록 (비율 계산용 Fallback 1순위)
         
         Returns:
             분할된 오디오 파일 경로 목록
@@ -327,15 +330,20 @@ class AudioGenerator:
                 chunks = self._merge_chunks(chunks, expected_chunks)
                 break
         
-        # 분할 개수가 맞지 않으면 텍스트 길이 비율로 분할 (fallback)
+        # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)
         if len(chunks) != expected_chunks:
             print(f"   ⚠️  Silence 분할 결과({len(chunks)}개)가 예상({expected_chunks}개)과 다름")
             
-            if text_lengths and len(text_lengths) == expected_chunks:
-                print(f"   📐 텍스트 길이 비율로 분할합니다 (Proportional Split)")
-                chunks = self._split_proportional_to_text(audio, text_lengths)
+            if expected_durations and len(expected_durations) == expected_chunks:
+                print(f"   📐 예상 시간(Duration) 비율로 분할합니다 (우선순위 높음)")
+                chunks = self._split_proportional(audio, expected_durations)
+                
+            elif text_lengths and len(text_lengths) == expected_chunks:
+                print(f"   📐 텍스트 길이 비율로 분할합니다")
+                chunks = self._split_proportional(audio, text_lengths)
+                
             else:
-                print(f"   📐 균등 분할로 대체합니다 (텍스트 길이 정보 부족)")
+                print(f"   📐 균등 분할로 대체합니다 (정보 부족)")
                 chunks = self._split_evenly(audio, expected_chunks)
         
         # 각 chunk 저장
@@ -371,28 +379,28 @@ class AudioGenerator:
         
         return chunks
     
-    def _split_proportional_to_text(self, audio, text_lengths: list):
-        """텍스트 길이에 비례하여 오디오를 분할."""
-        total_text_len = sum(text_lengths)
-        if total_text_len == 0:
-            return self._split_evenly(audio, len(text_lengths))
+    def _split_proportional(self, audio, reference_values: list):
+        """기준 값(텍스트 길이 or 예상 시간)에 비례하여 오디오를 분할."""
+        total_value = sum(reference_values)
+        if total_value == 0:
+            return self._split_evenly(audio, len(reference_values))
             
         total_audio_ms = len(audio)
         chunks = []
         start_ms = 0
         
-        for i, length in enumerate(text_lengths):
+        for i, value in enumerate(reference_values):
             # 마지막 청크는 끝까지
-            if i == len(text_lengths) - 1:
+            if i == len(reference_values) - 1:
                 chunks.append(audio[start_ms:])
             else:
                 # 비율 계산
-                ratio = length / total_text_len
+                ratio = value / total_value
                 duration_ms = int(total_audio_ms * ratio)
                 end_ms = start_ms + duration_ms
                 
-                # 경계 보정: 근처의 침묵 구간(낮은 볼륨) 찾기 (선택적)
-                # 간단히 구현하기 위해 정확한 비례 분할 사용
+                # 단순히 시간비례로 자르면 문장 중간이 잘릴 수 있음
+                # (TODO: 향후 근처 Silence 탐색 로직 추가 가능)
                 chunks.append(audio[start_ms:end_ms])
                 start_ms = end_ms
                 
