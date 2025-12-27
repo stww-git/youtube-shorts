@@ -244,10 +244,16 @@ class AudioGenerator:
         
         # 3. Silence 기반 분할
         print(f"\n   ✂️  [오디오 분할 시작]")
+        
+        # 텍스트 길이 비율 계산을 위해 텍스트 목록 전달
+        texts = [scene['audio_text'].strip() for scene in scenes]
+        text_lengths = [len(t) for t in texts]
+        
         audio_paths = self._split_audio_by_silence(
             temp_full_audio, 
             output_dir, 
-            len(scenes)
+            len(scenes),
+            text_lengths
         )
         
         # 4. 임시 파일 삭제
@@ -269,14 +275,15 @@ class AudioGenerator:
         
         return audio_paths
     
-    def _split_audio_by_silence(self, audio_path: str, output_dir: str, expected_chunks: int):
+    def _split_audio_by_silence(self, audio_path: str, output_dir: str, expected_chunks: int, text_lengths: list = None):
         """
-        Silence 기반으로 오디오 분할.
+        Silence 기반으로 오디오 분할. 실패 시 텍스트 길이 비율로 분할.
         
         Args:
             audio_path: 전체 오디오 파일 경로
             output_dir: 출력 디렉토리
             expected_chunks: 예상 분할 개수
+            text_lengths: 각 청크에 해당하는 텍스트 길이 목록 (비율 계산용)
         
         Returns:
             분할된 오디오 파일 경로 목록
@@ -320,11 +327,16 @@ class AudioGenerator:
                 chunks = self._merge_chunks(chunks, expected_chunks)
                 break
         
-        # 분할 개수가 맞지 않으면 균등 분할로 fallback
+        # 분할 개수가 맞지 않으면 텍스트 길이 비율로 분할 (fallback)
         if len(chunks) != expected_chunks:
             print(f"   ⚠️  Silence 분할 결과({len(chunks)}개)가 예상({expected_chunks}개)과 다름")
-            print(f"   📐 균등 분할로 대체합니다")
-            chunks = self._split_evenly(audio, expected_chunks)
+            
+            if text_lengths and len(text_lengths) == expected_chunks:
+                print(f"   📐 텍스트 길이 비율로 분할합니다 (Proportional Split)")
+                chunks = self._split_proportional_to_text(audio, text_lengths)
+            else:
+                print(f"   📐 균등 분할로 대체합니다 (텍스트 길이 정보 부족)")
+                chunks = self._split_evenly(audio, expected_chunks)
         
         # 각 chunk 저장
         audio_paths = []
@@ -359,6 +371,33 @@ class AudioGenerator:
         
         return chunks
     
+    def _split_proportional_to_text(self, audio, text_lengths: list):
+        """텍스트 길이에 비례하여 오디오를 분할."""
+        total_text_len = sum(text_lengths)
+        if total_text_len == 0:
+            return self._split_evenly(audio, len(text_lengths))
+            
+        total_audio_ms = len(audio)
+        chunks = []
+        start_ms = 0
+        
+        for i, length in enumerate(text_lengths):
+            # 마지막 청크는 끝까지
+            if i == len(text_lengths) - 1:
+                chunks.append(audio[start_ms:])
+            else:
+                # 비율 계산
+                ratio = length / total_text_len
+                duration_ms = int(total_audio_ms * ratio)
+                end_ms = start_ms + duration_ms
+                
+                # 경계 보정: 근처의 침묵 구간(낮은 볼륨) 찾기 (선택적)
+                # 간단히 구현하기 위해 정확한 비례 분할 사용
+                chunks.append(audio[start_ms:end_ms])
+                start_ms = end_ms
+                
+        return chunks
+
     def _split_evenly(self, audio, count: int):
         """오디오를 균등하게 분할."""
         from pydub import AudioSegment

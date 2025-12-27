@@ -172,7 +172,7 @@ RECIPE_SCRIPT_GENERATION_PROMPT = """
 ## 출력 형식 (JSON)
 각 줄을 하나의 scene으로 변환하여 총 8개의 scene을 생성해라
 {{
-  "scenes": [
+    "scenes": [
     {{"scene_id": 1, "audio_text": "미역국 아직도 끓는 물에 바로 넣으세요?", "duration": 5}},
     {{"scene_id": 2, "audio_text": "그러면 미역이 질겨지고 국물이 탁해져요", "duration": 5}},
     {{"scene_id": 3, "audio_text": "보통 물 끓으면 바로 미역 넣으시죠", "duration": 5}},
@@ -181,7 +181,7 @@ RECIPE_SCRIPT_GENERATION_PROMPT = """
     {{"scene_id": 6, "audio_text": "비법이 대체 뭘까요?", "duration": 3}},
     {{"scene_id": 7, "audio_text": "좋아요 한 번만 눌러주세요", "duration": 3}},
     {{"scene_id": 8, "audio_text": "[8번 줄 - 핵심 레시피 공개]", "duration": 8}}
-  ]
+    ]
 }}
 
 [물음표 사용 필수]
