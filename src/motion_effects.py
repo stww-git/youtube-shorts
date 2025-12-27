@@ -553,12 +553,109 @@ class MotionEffectsComposer:
         return [text]
     
     
+    def _create_subtitle_image(self, text, style):
+        """Creates a subtitle image using Pillow to avoid MoviePy trimming issues."""
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            import numpy as np
+            
+            # Unpack style
+            font_path = style.get('font_path', self.font)
+            font_size = style.get('font_size', 80)
+            text_color = style.get('text_color', 'white')
+            stroke_color = style.get('stroke_color', 'black')
+            stroke_width = style.get('stroke_width', 3)
+            max_width = style.get('max_width', 960)
+            
+            # Load font
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+            except:
+                font = ImageFont.load_default()
+            
+            # Wrap text manually
+            dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            words = text.split()
+            lines = []
+            current_line = []
+            
+            for word in words:
+                current_line.append(word)
+                line_str = ' '.join(current_line)
+                bbox = dummy_draw.textbbox((0, 0), line_str, font=font)
+                width = bbox[2] - bbox[0]
+                
+                if width > max_width:
+                    if len(current_line) == 1:
+                        lines.append(current_line[0])
+                        current_line = []
+                    else:
+                        current_line.pop()
+                        lines.append(' '.join(current_line))
+                        current_line = [word]
+            
+            if current_line:
+                lines.append(' '.join(current_line))
+            
+            # Calculate total image size
+            line_spacing = 10
+            line_heights = []
+            total_text_height = 0
+            max_line_width = 0
+            
+            for line in lines:
+                bbox = dummy_draw.textbbox((0, 0), line, font=font)
+                w = bbox[2] - bbox[0]
+                h = bbox[3] - bbox[1]
+                line_heights.append(h)
+                total_text_height += h
+                max_line_width = max(max_line_width, w)
+            
+            total_text_height += line_spacing * (len(lines) - 1)
+            
+            # Add padding for stroke
+            padding = stroke_width * 2 + 10
+            img_width = max_line_width + padding * 2
+            img_height = total_text_height + padding * 2
+            
+            # Create image
+            img = Image.new('RGBA', (img_width, img_height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            
+            # Draw text
+            current_y = padding
+            for i, line in enumerate(lines):
+                bbox = draw.textbbox((0, 0), line, font=font)
+                w = bbox[2] - bbox[0]
+                x = (img_width - w) // 2
+                
+                # Draw stroke
+                if stroke_width > 0:
+                    for dx in range(-stroke_width, stroke_width + 1):
+                        for dy in range(-stroke_width, stroke_width + 1):
+                            if dx == 0 and dy == 0: continue
+                            # Optimized circular stroke
+                            if dx*dx + dy*dy > stroke_width*stroke_width + 1: continue 
+                            draw.text((x + dx, current_y + dy), line, font=font, fill=stroke_color)
+                
+                # Draw main text
+                draw.text((x, current_y), line, font=font, fill=text_color)
+                
+                current_y += line_heights[i] + line_spacing
+            
+            return np.array(img)
+            
+        except Exception as e:
+            logger.error(f"Failed to create subtitle image: {e}")
+            return None
+
     def _add_subtitle(self, clip, text: str, duration: float):
-        """Adds a subtitle overlay to a clip at the center of the screen.
+        """Adds a subtitle overlay to a clip using Pillow for rendering."""
+        from src.subtitle_config import (
+            get_subtitle_style, is_impact_text, 
+            SUBTITLE_Y_POSITION
+        )
         
-        Splits text by sentence endings (., ?, !) and displays each sentence
-        sequentially with equal time distribution.
-        """
         try:
             text = text.strip()
             if not text:
@@ -572,51 +669,35 @@ class MotionEffectsComposer:
             if not sentences:
                 return clip
             
-            # Define impact keywords for highlighting
-            impact_keywords_strict = ["절대", "경고", "비밀", "정답", "비법"]
-            
             subtitle_clips = []
             num_sentences = len(sentences)
             sentence_duration = duration / num_sentences
             current_time = 0
             
             for sentence in sentences:
-                # Check if sentence starts with an impact word
-                words = sentence.split()
-                first_word = words[0] if words else ""
-                is_impactful = any(first_word.startswith(k) for k in impact_keywords_strict)
+                is_impactful = is_impact_text(sentence)
+                style = get_subtitle_style(is_impactful)
                 
-                # Dynamic styling
-                text_color = '#FFD700' if is_impactful else 'white'
-                stroke_width = 4 if is_impactful else 3
-                font_size = 80
+                # Create image using Pillow
+                img_array = self._create_subtitle_image(sentence, style)
                 
-                txt_clip = TextClip(
-                    text=sentence, 
-                    font_size=font_size,
-                    color=text_color, 
-                    font=self.font,
-                    stroke_color='black', 
-                    stroke_width=stroke_width,
-                    size=(960, None),
-                    method='caption',
-                    text_align='center',
-                    duration=sentence_duration
-                )
+                if img_array is not None:
+                    txt_clip = ImageClip(img_array).with_duration(sentence_duration)
+                    
+                    # Fixed position (안정적인 위치)
+                    try:
+                        txt_clip = txt_clip.with_position(('center', SUBTITLE_Y_POSITION))
+                    except AttributeError:
+                        txt_clip = txt_clip.set_position(('center', SUBTITLE_Y_POSITION))
+                    
+                    # Set timing
+                    try:
+                        txt_clip = txt_clip.with_start(current_time)
+                    except AttributeError:
+                        txt_clip = txt_clip.set_start(current_time)
+                    
+                    subtitle_clips.append(txt_clip)
                 
-                # Set position to center of screen
-                try:
-                    txt_clip = txt_clip.with_position(('center', 0.5), relative=True)
-                except AttributeError:
-                    txt_clip = txt_clip.set_position(('center', 0.5), relative=True)
-                
-                # Set timing
-                try:
-                    txt_clip = txt_clip.with_start(current_time)
-                except AttributeError:
-                    txt_clip = txt_clip.set_start(current_time)
-                
-                subtitle_clips.append(txt_clip)
                 current_time += sentence_duration
             
             if subtitle_clips:
