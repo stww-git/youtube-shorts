@@ -192,10 +192,10 @@ class AudioGenerator:
                 except Exception:
                     pass
         
-        # 1. 전체 텍스트 조합 (문장 사이에 구분자 추가)
-        # 짧은 pause를 위해 마침표와 쉼표 추가
+        # 1. 전체 텍스트 조합 (문장 사이에 긴 쉼표 추가)
+        # "..." 사용으로 TTS가 더 긴 pause 생성 → silence 감지 정확도 향상
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ". ".join(texts) + "."
+        full_text = "... ".join(texts) + "."
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
         print(f"   총 {len(scenes)}개 문장을 한 번에 생성합니다")

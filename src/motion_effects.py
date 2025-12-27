@@ -1,8 +1,11 @@
 import os
 import logging
+import tempfile
 from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ImageClip, ColorClip
 from typing import List, Dict
+from PIL import Image, ImageDraw, ImageFont
 from src.config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
+from src.title_generator import create_title_image
 
 logger = logging.getLogger(__name__)
 
@@ -164,80 +167,108 @@ class MotionEffectsComposer:
                 print(f"   📌 제목 추가 중: {first_sentence[:30]}...")
                 
                 # YouTube Shorts top margin: avoid overlapping with channel icon/follow button
-                TOP_MARGIN = 80  # pixels from top to avoid YouTube UI elements
+                TOP_MARGIN = 100
                 
                 # Adaptive Font Sizing Strategy
-                # 1. Short title (<15 chars) -> 100px (Impact)
-                # 2. Medium title (15-25 chars) -> 80px (Safe)
-                # 3. Long title (>25 chars) -> 65px (Prevent Overflow)
-                
-                # Use total length INCLUDING SPACES for accurate sizing
                 title_len = len(first_sentence)
                 if title_len < 15:
-                    font_size = 100
+                    font_size = 120
                     line_height_factor = 1.2
                 elif title_len < 25:
-                    font_size = 80
+                    font_size = 100
                     line_height_factor = 1.25
                 else:
-                    font_size = 65
+                    font_size = 80
                     line_height_factor = 1.3
                 
-                # Use MoviePy's automatic word wrapping (simpler, respects word boundaries)
+                # Use local Gungsuh font
+                title_font = os.path.join(os.getcwd(), "fonts/Gungseouche.ttf")
                 title_text = first_sentence
                 
-                # Create text clip with automatic word wrapping
-                title_clip = TextClip(
-                    text=title_text,
-                    font_size=font_size,  # Adaptive font size
-                    color='white',
-                    font=self.font,
-                    stroke_color='black',
-                    stroke_width=4,  # Thicker stroke for larger font
-                    size=(864, None),  # 80% of 1080px width, auto word-wrap
-                    method='caption',  # Auto-wrap + center alignment
-                    text_align='center',  # Explicit center alignment
-                    duration=final_video.duration
-                )
+                # === NEW: Pillow-based title generation (tight letter spacing) ===
+                use_pillow_title = True  # Set to False to use old TextClip method
                 
-                # Estimate number of lines for background height calculation
-                avg_chars_per_line = 12  # Approximate for Korean with this font size
-                num_lines = max(1, (len(title_text) + avg_chars_per_line - 1) // avg_chars_per_line)
-                line_height = int(font_size * line_height_factor)
-                text_height = num_lines * line_height
+                if use_pillow_title:
+                    try:
+                        # Create title image with tight letter spacing
+                        title_image_path = create_title_image(
+                            text=title_text,
+                            font_size=font_size,
+                            letter_spacing=-30,  # 자간: 좁게
+                            text_color='white',
+                            stroke_color='black',
+                            stroke_width=0,      # 테두리 없음
+                            max_width=800,       # 좁은 너비
+                            line_height=1.0,     # 줄간격: 빼곡하게
+                            font_path=title_font
+                        )
+                        
+                        # Load as ImageClip
+                        title_clip = ImageClip(title_image_path)
+                        title_clip = title_clip.with_duration(final_video.duration)
+                        
+                        # Get actual image dimensions for background
+                        from PIL import Image as PILImage
+                        with PILImage.open(title_image_path) as img:
+                            title_img_height = img.height
+                        
+                        print(f"      🎨 Pillow 방식 사용 (자간: -5px)")
+                        
+                    except Exception as e:
+                        logger.warning(f"Pillow title failed: {e}. Falling back to TextClip.")
+                        use_pillow_title = False
                 
-                # Background height should cover the TOP_MARGIN plus the text area and padding
-                # New height = TOP_MARGIN + text_height + bottom padding (40px)
-                bg_height = int(TOP_MARGIN + text_height + 40)
-                # Ensure minimum height
-                bg_height = max(bg_height, 150)
+                if not use_pillow_title:
+                    # OLD METHOD: TextClip (wide letter spacing)
+                    title_clip = TextClip(
+                        text=title_text,
+                        font_size=font_size,
+                        color='white',
+                        font=title_font,
+                        stroke_color='black',
+                        stroke_width=5,
+                        size=(900, None),
+                        method='caption',
+                        text_align='center',
+                        duration=final_video.duration
+                    )
+                    title_img_height = None  # Will use estimate
+                    print(f"      📝 TextClip 방식 사용 (기본 자간)")
                 
-                bg_width = VIDEO_WIDTH  # Full width (9:16 video width)
+                # Calculate background height
+                if use_pillow_title and title_img_height:
+                    bg_height = int(TOP_MARGIN + title_img_height + 40)
+                else:
+                    avg_chars_per_line = 10
+                    num_lines = max(1, (len(title_text) + avg_chars_per_line - 1) // avg_chars_per_line)
+                    line_height = int(font_size * line_height_factor)
+                    text_height = num_lines * line_height
+                    bg_height = int(TOP_MARGIN + text_height + 40)
                 
-                print(f"      📐 제목 배경: {num_lines}줄, 높이 {bg_height}px (상단 0px부터 시작)")
+                bg_height = max(bg_height, 180)
+                bg_width = VIDEO_WIDTH
+                
+                print(f"      📐 제목 배경: 높이 {bg_height}px, 폰트 {font_size}px")
                 
                 bg_clip = ColorClip(
                     size=(bg_width, bg_height),
-                    color=(0, 0, 0),  # Black
+                    color=(0, 0, 0),
                     duration=final_video.duration
                 )
                 
-                # Position background at absolute top (0 pixels from top)
                 try:
                     bg_clip = bg_clip.with_position(('center', 0))
                 except AttributeError:
                     bg_clip = bg_clip.set_position(('center', 0))
                 
-                # Position text: TOP_MARGIN + padding
-                # We want text to start after the TOP_MARGIN
-                text_y_position = TOP_MARGIN + 50  # 50px padding below UI area (더 아래로)
+                # Position title
+                text_y_position = TOP_MARGIN + 20
                 
                 try:
                     title_clip = title_clip.with_position(('center', text_y_position))
                 except AttributeError:
                     title_clip = title_clip.set_position(('center', text_y_position))
                 
-                # Composite: video + background + text
                 final_video = CompositeVideoClip([final_video, bg_clip, title_clip])
                 print(f"   ✅ 제목 추가 완료 (검정 배경 포함)\n")
             
@@ -424,6 +455,8 @@ class MotionEffectsComposer:
                 print(f"   ⚠️  오디오 추가 실패: {e}")
                 return video_clip
 
+
+
     def _extract_first_sentence(self, text: str) -> str:
         """
         Extract the first sentence from the title.
@@ -519,132 +552,62 @@ class MotionEffectsComposer:
             
         return [text]
     
-    def _split_text_for_subtitle(self, text: str, max_length: int = 25) -> List[tuple]:
-        """
-        Split text into shorter segments for subtitle display.
-        IMPORTANT: Never split in the middle of a word!
-        Duration is proportional to character count for better sync with narration.
-        
-        Args:
-            text: Full text to split
-            max_length: Maximum characters per subtitle segment (default 25 for Korean)
-        
-        Returns:
-            List of (text_segment, duration_ratio) tuples with proportional timing
-        """
-        text = text.strip()
-        if not text:
-            return [(text, 1.0)]
-        
-        if len(text) <= max_length:
-            return [(text, 1.0)]
-        
-        segments = []
-        
-        # First, try to split by natural sentence breaks (,. ! ? etc.)
-        import re
-        # Split by sentence-ending punctuation while keeping the punctuation
-        sentence_parts = re.split(r'([.!?。！？,，]+\s*)', text)
-        
-        current_segment = ""
-        for part in sentence_parts:
-            if not part:
-                continue
-            
-            test_segment = current_segment + part
-            
-            if len(test_segment) <= max_length:
-                current_segment = test_segment
-            else:
-                # Current segment is full, save it
-                if current_segment.strip():
-                    segments.append(current_segment.strip())
-                
-                # Check if this part itself is too long
-                if len(part) <= max_length:
-                    current_segment = part
-                else:
-                    # Split long part by SPACES to avoid breaking words
-                    words = part.split()
-                    current_segment = ""
-                    for word in words:
-                        test_word = (current_segment + " " + word).strip() if current_segment else word
-                        if len(test_word) <= max_length:
-                            current_segment = test_word
-                        else:
-                            if current_segment.strip():
-                                segments.append(current_segment.strip())
-                            current_segment = word
-                    # Don't append here, let the loop continue
-        
-        # Add remaining text
-        if current_segment.strip():
-            segments.append(current_segment.strip())
-        
-        # If no segments, return original text
-        if not segments:
-            return [(text, 1.0)]
-        
-        # Calculate duration ratios PROPORTIONAL to character count
-        total_chars = sum(len(seg) for seg in segments)
-        if total_chars == 0:
-            ratio = 1.0 / len(segments)
-            return [(seg, ratio) for seg in segments]
-        
-        result = []
-        for seg in segments:
-            char_ratio = len(seg) / total_chars
-            result.append((seg, char_ratio))
-        
-        return result
     
     def _add_subtitle(self, clip, text: str, duration: float):
-        """Adds a subtitle overlay to a clip at the center of the screen."""
+        """Adds a subtitle overlay to a clip at the center of the screen.
+        
+        Splits text by sentence endings (., ?, !) and displays each sentence
+        sequentially with equal time distribution.
+        """
         try:
-            # Split text into shorter segments for faster transitions
-            text_segments = self._split_text_for_subtitle(text, max_length=25)
+            text = text.strip()
+            if not text:
+                return clip
+            
+            # Split text into sentences by ., ?, !
+            import re
+            sentences = re.split(r'(?<=[.?!])\s+', text)
+            sentences = [s.strip() for s in sentences if s.strip()]
+            
+            if not sentences:
+                return clip
+            
+            # Define impact keywords for highlighting
+            impact_keywords_strict = ["절대", "경고", "비밀", "정답", "비법"]
             
             subtitle_clips = []
+            num_sentences = len(sentences)
+            sentence_duration = duration / num_sentences
             current_time = 0
             
-            # Define impact keywords for highlighting (REDUCED list for key moments only)
-            # Only first-word matches trigger emphasis to avoid over-highlighting
-            impact_keywords_strict = [
-                "절대", "경고", "비밀", "정답", "비법"
-            ]
-            
-            for segment_text, duration_ratio in text_segments:
-                segment_duration = duration * duration_ratio
-                
-                # STRICT CHECK: Only highlight if segment STARTS with a key impact word
-                words = segment_text.split()
+            for sentence in sentences:
+                # Check if sentence starts with an impact word
+                words = sentence.split()
                 first_word = words[0] if words else ""
                 is_impactful = any(first_word.startswith(k) for k in impact_keywords_strict)
                 
-                # Dynamic styling (simplified - only first-word matches trigger color)
-                text_color = '#FFD700' if is_impactful else 'white'  # Gold for impact, white for normal
+                # Dynamic styling
+                text_color = '#FFD700' if is_impactful else 'white'
                 stroke_width = 4 if is_impactful else 3
-                font_size = 85 if is_impactful else 80  # Slightly larger for emphasis
+                font_size = 80
                 
                 txt_clip = TextClip(
-                    text=segment_text, 
+                    text=sentence, 
                     font_size=font_size,
                     color=text_color, 
                     font=self.font,
                     stroke_color='black', 
                     stroke_width=stroke_width,
-                    size=(960, None),  # 좌우 60px 여백 확보 (1080 - 120)
+                    size=(960, None),
                     method='caption',
                     text_align='center',
-                    duration=segment_duration
+                    duration=sentence_duration
                 )
-
                 
-                # Set position to center of screen (compatible with both versions)
+                # Set position to center of screen
                 try:
                     txt_clip = txt_clip.with_position(('center', 0.5), relative=True)
                 except AttributeError:
-                    # Fallback for older MoviePy versions
                     txt_clip = txt_clip.set_position(('center', 0.5), relative=True)
                 
                 # Set timing
@@ -654,17 +617,14 @@ class MotionEffectsComposer:
                     txt_clip = txt_clip.set_start(current_time)
                 
                 subtitle_clips.append(txt_clip)
-                current_time += segment_duration
+                current_time += sentence_duration
             
-            # Combine all subtitle clips
             if subtitle_clips:
                 return CompositeVideoClip([clip] + subtitle_clips)
-            else:
-                return clip
+            return clip
                 
         except Exception as e:
             logger.warning(f"Failed to add subtitle: {e}")
-            # Return clip without subtitle if subtitle fails
             return clip
     
     def _add_title(self, clip, title: str, duration: float):

@@ -175,7 +175,7 @@ RECIPE_SCRIPT_GENERATION_PROMPT = """
     "scenes": [
     {{"scene_id": 1, "audio_text": "미역국 아직도 끓는 물에 바로 넣으세요?", "duration": 5}},
     {{"scene_id": 2, "audio_text": "그러면 미역이 질겨지고 국물이 탁해져요", "duration": 5}},
-    {{"scene_id": 3, "audio_text": "보통 물 끓으면 바로 미역 넣으시죠", "duration": 5}},
+    {{"scene_id": 3, "audio_text": "보통 물 끓으면 바로 미역 넣으시죠?", "duration": 5}},
     {{"scene_id": 4, "audio_text": "미역이 갑자기 뜨거워지면 조직이 굳어버려요", "duration": 6}},
     {{"scene_id": 5, "audio_text": "주부 9단 어머님은 이렇게만 하시는데요", "duration": 4}},
     {{"scene_id": 6, "audio_text": "비법이 대체 뭘까요?", "duration": 3}},
