@@ -204,6 +204,15 @@ def main():
     # Create output folder
     output_dir = create_output_folder(video_title)
     print(f"   📁 출력 폴더 생성: {output_dir}")
+    
+    # Save title and script to file
+    script_file = os.path.join(output_dir, "script.txt")
+    with open(script_file, "w", encoding="utf-8") as f:
+        f.write(f"[제목]\n{video_title}\n\n")
+        f.write(f"[대본]\n")
+        for scene in scenes:
+            f.write(f"{scene['scene_id']}. {scene['audio_text']}\n")
+    print(f"   📝 대본/제목 저장: script.txt")
 
     # ==========================================
     # Step 4: Audio Generation (통합 생성 + Silence 분할)

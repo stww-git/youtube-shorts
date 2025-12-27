@@ -49,12 +49,10 @@ class RecipeScriptGenerator:
             JSON 형식의 대본 문자열 (실패 시 None)
         """
         title = recipe.get('title', '요리')
-        ingredients = format_ingredients(recipe.get('ingredients', []))
         steps = format_steps(recipe.get('steps', []))
         
         prompt = RECIPE_SCRIPT_GENERATION_PROMPT.format(
             title=title,
-            ingredients=ingredients,
             steps=steps
         )
         
@@ -64,7 +62,6 @@ class RecipeScriptGenerator:
                 if attempt == 1:
                     print(f"\n--- [DEBUG] Recipe Script Generation ---")
                     print(f"   레시피: {title}")
-                    print(f"   재료: {len(recipe.get('ingredients', []))}개")
                     print(f"   조리단계: {len(recipe.get('steps', []))}개")
                     print(f"----------------------------------------")
                 else:
