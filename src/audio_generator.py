@@ -193,9 +193,9 @@ class AudioGenerator:
                     pass
         
         # 1. 전체 텍스트 조합
-        # 문장 사이에 확실한 마침표와 공백을 추가하여 TTS가 명확히 쉬어가도록 유도
+        # 문장 사이에 더 긴 휴식을 위해 마침표와 줄바꿈을 추가
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ". ".join(texts) + "."
+        full_text = ".\n\n".join(texts) + "."
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
         print(f"   총 {len(scenes)}개 문장을 한 번에 생성합니다")
@@ -331,16 +331,18 @@ class AudioGenerator:
                 break
         
         # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)
+        # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)
         if len(chunks) != expected_chunks:
             print(f"   ⚠️  Silence 분할 결과({len(chunks)}개)가 예상({expected_chunks}개)과 다름")
             
-            if expected_durations and len(expected_durations) == expected_chunks:
-                print(f"   📐 예상 시간(Duration) 비율로 분할합니다 (우선순위 높음)")
-                chunks = self._split_proportional(audio, expected_durations)
-                
-            elif text_lengths and len(text_lengths) == expected_chunks:
-                print(f"   📐 텍스트 길이 비율로 분할합니다")
+            # [수정] 대본 상의 Duration은 부정확하므로, 텍스트 길이(글자수)를 최우선 기준으로 삼음
+            if text_lengths and len(text_lengths) == expected_chunks:
+                print(f"   📐 텍스트 길이 비율로 분할합니다 (우선순위 높음)")
                 chunks = self._split_proportional(audio, text_lengths)
+            
+            elif expected_durations and len(expected_durations) == expected_chunks:
+                print(f"   📐 예상 시간(Duration) 비율로 분할합니다 (Fallback)")
+                chunks = self._split_proportional(audio, expected_durations)
                 
             else:
                 print(f"   📐 균등 분할로 대체합니다 (정보 부족)")

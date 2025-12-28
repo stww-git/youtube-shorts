@@ -221,44 +221,13 @@ def main():
     print_step(4, 6, "나레이션 오디오 생성", "🎤 Gemini TTS 통합 생성 중")
     
     try:
-        # 개별 장면별 오디오 생성 (싱크 정확도 향상)
-        # Batch 생성 대신 개별 생성을 사용하여 파일 분할 오류 방지
-        print(f"   🔊 개별 장면 오디오 생성 시작 (총 {len(scenes)}개)...")
-        
-        audio_paths = []
-        for idx, scene in enumerate(scenes):
-            scene_id = scene['scene_id']
-            text = scene['audio_text']
-            
-            # [Naturalness Fix]
-            # 자막에는 마침표가 없어도 자연스럽지만, TTS는 마침표가 있어야 문장의 끝으로 인식하고 톤을 내립니다.
-            # 따라서 TTS 생성을 위한 텍스트에는 문장부호가 없으면 마침표를 임시로 추가합니다.
-            tts_text = text.strip()
-            if tts_text and not tts_text.endswith(('.', '?', '!')):
-                tts_text += '.'
-            
-            # 파일명: audio_scene_1.wav
-            filename = f"audio_scene_{scene_id}.wav"
-            filepath = os.path.join(output_dir, filename)
-            
-            print(f"      Scene {scene_id} 오디오 생성 중... (TTS 입력: {tts_text})")
-            generated_path = audio_gen.generate_speech(tts_text, filepath)
-            
-            if generated_path and os.path.exists(generated_path):
-                audio_paths.append(generated_path)
-                
-                # Update scene info immediately
-                scene['audio_path'] = generated_path
-                scene['duration'] = audio_gen.get_audio_duration(generated_path)
-            else:
-                raise Exception(f"Scene {scene_id} Audio Generation Failed")
-            
-            # API Rate Limit 방지를 위한 짧은 대기
-            time.sleep(1)
-
+        # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
+        # audio_generator.py의 개선된 분할 로직(Duration Fallback) 덕분에 싱크도 안전함
+        audio_paths = audio_gen.generate_speech_batch(scenes, output_dir)
+    
         print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
         total_duration = sum(s['duration'] for s in scenes)
-        print(f"   📏 실제 전체 영상 길이: {total_duration:.2f}초\n")
+        print(f"   📏 예상 전체 영상 길이: {total_duration:.2f}초\n")
         
     except Exception as e:
         print_error(f"오디오 생성 실패: {str(e)}")
