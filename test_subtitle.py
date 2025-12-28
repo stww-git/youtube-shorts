@@ -32,8 +32,8 @@ FONT_SIZE = 80
 FONT_PATH = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
 TEXT_COLOR = 'white'
 STROKE_COLOR = 'black'
-STROKE_WIDTH = 3
-MAX_WIDTH = 900          # 줄바꿈 기준 너비
+STROKE_WIDTH = 10
+MAX_WIDTH = 960          # 줄바꿈 기준 너비
 
 # ============================================
 

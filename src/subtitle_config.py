@@ -44,8 +44,62 @@ SUBTITLE_MAX_WIDTH = 960
 # 기본 색상
 SUBTITLE_TEXT_COLOR = 'white'
 SUBTITLE_STROKE_COLOR = 'black'
-SUBTITLE_STROKE_WIDTH = 3
+SUBTITLE_STROKE_WIDTH = 10
 
+# ============================================
+# 키워드별 색상 설정 (Intonation-based Coloring)
+# ============================================
+
+# 1. 색상 팔레트
+COLOR_WARNING = '#FF3333'  # 밝은 빨강 (강한 경고/금지)
+COLOR_EMPHASIS = '#FFD700' # 금색 (긍정/감탄/강조)
+COLOR_SECRET = '#00FF00'   # 밝은 라임/녹색 (비법/해결책)
+COLOR_URGENT = '#FF00FF'   # 마젠타/핑크 (긴급/속보)
+
+# 2. 키워드 카테고리 매핑
+KEYWORD_CATEGORIES = {
+    'WARNING': [
+        "절대", "경고", "금지", "조심", "주의", "망함", "큰일", "제발", "최악", "위험",
+        "넣지", "하지", "쓰지", "마세요"  # 부정어구 추가
+    ],
+    'EMPHASIS': [
+        "무조건", "평생", "인생", "대박", "진짜", "정말", "완전", "최고", "깜짝", "특히", "와"
+    ],
+    'SECRET': [
+        "비밀", "정답", "비법", "핵심", "필수", "강추", "추천", "꿀팁", "노하우", "공개"
+    ],
+    'URGENT': [
+        "지금", "바로", "당장", "속보", "빨리", "어서"
+    ]
+}
+
+# 3. 카테고리별 색상 매핑
+CATEGORY_COLORS = {
+    'WARNING': COLOR_WARNING,
+    'EMPHASIS': COLOR_EMPHASIS,
+    'SECRET': COLOR_SECRET,
+    'URGENT': COLOR_URGENT
+}
+
+def get_keyword_color(word: str, default_color: str = SUBTITLE_TEXT_COLOR) -> str:
+    """
+    단어가 특정 카테고리 키워드로 시작하면 해당 색상을 반환합니다.
+    
+    Args:
+        word: 검사할 단어
+        default_color: 매칭되는 키워드가 없을 때 반환할 색상
+        
+    Returns:
+        Hex 색상 코드
+    """
+    clean_word = word.replace('.', '').replace(',', '').replace('!', '').replace('?', '').strip()
+    
+    for category, keywords in KEYWORD_CATEGORIES.items():
+        for k in keywords:
+            if clean_word.startswith(k):
+                return CATEGORY_COLORS[category]
+    
+    return default_color
 # 강조 색상 (impact keywords)
 SUBTITLE_IMPACT_COLOR = '#FFD700'  # 금색
 SUBTITLE_IMPACT_STROKE_WIDTH = 4

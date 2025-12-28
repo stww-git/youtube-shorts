@@ -17,7 +17,7 @@ from src.title_generator import create_title_image
 # ========================================
 
 # 제목 텍스트
-TITLE_TEXT = "오징어무국 오징어 처음부터 넣지 마세요"
+TITLE_TEXT = "카레 돼지고기 바로 볶기 절대 이렇게 하지마세요"
 
 # 폰트 설정
 FONT_PATH = os.path.join(os.getcwd(), "fonts/Gungseouche.ttf")

@@ -4,6 +4,7 @@ import tempfile
 from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ImageClip, ColorClip
 from typing import List, Dict
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 from src.config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
 from src.title_generator import create_title_image
 
@@ -556,8 +557,7 @@ class MotionEffectsComposer:
     def _create_subtitle_image(self, text, style):
         """Creates a subtitle image using Pillow to avoid MoviePy trimming issues."""
         try:
-            from PIL import Image, ImageDraw, ImageFont
-            import numpy as np
+            from src.subtitle_config import get_keyword_color
             
             # Unpack style
             font_path = style.get('font_path', self.font)
@@ -573,45 +573,68 @@ class MotionEffectsComposer:
             except:
                 font = ImageFont.load_default()
             
-            # Wrap text manually
+            # Wrap text and calculate layout
             dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
             words = text.split()
-            lines = []
-            current_line = []
+            line_layouts = [] # Each element is a list of {'text': word, 'width': w, 'color': color}
+            current_line_words = []
+            current_line_width = 0
+            
+            # Calculate space width once
+            space_width = dummy_draw.textbbox((0, 0), " ", font=font)[2] - dummy_draw.textbbox((0, 0), " ", font=font)[0]
             
             for word in words:
-                current_line.append(word)
-                line_str = ' '.join(current_line)
-                bbox = dummy_draw.textbbox((0, 0), line_str, font=font)
-                width = bbox[2] - bbox[0]
+                word_bbox = dummy_draw.textbbox((0, 0), word, font=font)
+                word_width = word_bbox[2] - word_bbox[0]
                 
-                if width > max_width:
-                    if len(current_line) == 1:
-                        lines.append(current_line[0])
-                        current_line = []
-                    else:
-                        current_line.pop()
-                        lines.append(' '.join(current_line))
-                        current_line = [word]
+                # Check if adding this word exceeds max_width
+                # If current_line_words is empty, it's the first word, so add it regardless
+                # Otherwise, check if current_line_width + space + word_width > max_width
+                if current_line_words and (current_line_width + space_width + word_width > max_width):
+                    # Start a new line
+                    line_layouts.append(current_line_words)
+                    current_line_words = []
+                    current_line_width = 0
+                
+                # Add word to current line
+                color = get_keyword_color(word, text_color)
+                current_line_words.append({
+                    "text": word,
+                    "width": word_width,
+                    "color": color
+                })
+                current_line_width += word_width
+                if len(current_line_words) > 1: # Add space width only if it's not the first word on the line
+                    current_line_width += space_width
             
-            if current_line:
-                lines.append(' '.join(current_line))
+            # Add any remaining words as the last line
+            if current_line_words:
+                line_layouts.append(current_line_words)
             
-            # Calculate total image size
+            # Calculate total image size based on line_layouts
             line_spacing = 10
-            line_heights = []
             total_text_height = 0
             max_line_width = 0
+            line_heights = [] # Store height for each line
             
-            for line in lines:
-                bbox = dummy_draw.textbbox((0, 0), line, font=font)
-                w = bbox[2] - bbox[0]
-                h = bbox[3] - bbox[1]
-                line_heights.append(h)
-                total_text_height += h
-                max_line_width = max(max_line_width, w)
+            for line_data in line_layouts:
+                line_max_word_height = 0
+                line_total_width = 0
+                for i, word_info in enumerate(line_data):
+                    # Recalculate bbox for height, as it might vary slightly
+                    bbox = dummy_draw.textbbox((0, 0), word_info['text'], font=font)
+                    h = bbox[3] - bbox[1]
+                    line_max_word_height = max(line_max_word_height, h)
+                    
+                    line_total_width += word_info['width']
+                    if i < len(line_data) - 1:
+                        line_total_width += space_width
+                
+                line_heights.append(line_max_word_height)
+                total_text_height += line_max_word_height
+                max_line_width = max(max_line_width, line_total_width)
             
-            total_text_height += line_spacing * (len(lines) - 1)
+            total_text_height += line_spacing * (len(line_layouts) - 1)
             
             # Add padding for stroke
             padding = stroke_width * 2 + 10
@@ -624,24 +647,40 @@ class MotionEffectsComposer:
             
             # Draw text
             current_y = padding
-            for i, line in enumerate(lines):
-                bbox = draw.textbbox((0, 0), line, font=font)
-                w = bbox[2] - bbox[0]
-                x = (img_width - w) // 2
+            for line_idx, line_data in enumerate(line_layouts):
+                # Calculate total line width for centering
+                line_total_width = 0
+                for i, word_info in enumerate(line_data):
+                    line_total_width += word_info['width']
+                    if i < len(line_data) - 1:
+                        line_total_width += space_width
+                        
+                # Center alignment
+                start_x = (img_width - line_total_width) // 2
+                current_x = start_x
                 
-                # Draw stroke
-                if stroke_width > 0:
-                    for dx in range(-stroke_width, stroke_width + 1):
-                        for dy in range(-stroke_width, stroke_width + 1):
-                            if dx == 0 and dy == 0: continue
-                            # Optimized circular stroke
-                            if dx*dx + dy*dy > stroke_width*stroke_width + 1: continue 
-                            draw.text((x + dx, current_y + dy), line, font=font, fill=stroke_color)
+                for i, word_info in enumerate(line_data):
+                    word_text = word_info['text']
+                    color = word_info['color']
+                    
+                    # Draw stroke
+                    if stroke_width > 0:
+                        for dx in range(-stroke_width, stroke_width + 1):
+                            for dy in range(-stroke_width, stroke_width + 1):
+                                if dx == 0 and dy == 0: continue
+                                # Optimized circular stroke
+                                if dx*dx + dy*dy > stroke_width*stroke_width + 1: continue 
+                                draw.text((current_x + dx, current_y + dy), word_text, font=font, fill=stroke_color)
+                    
+                    # Draw main text
+                    draw.text((current_x, current_y), word_text, font=font, fill=color)
+                    
+                    current_x += word_info['width']
+                    if i < len(line_data) - 1:
+                        current_x += space_width
                 
-                # Draw main text
-                draw.text((x, current_y), line, font=font, fill=text_color)
-                
-                current_y += line_heights[i] + line_spacing
+                # Move to next line
+                current_y += line_heights[line_idx] + line_spacing
             
             return np.array(img)
             
@@ -699,6 +738,9 @@ class MotionEffectsComposer:
             subtitle_clips = []
             current_time = 0
             
+            # 스타일은 기본 스타일만 가져오고, 강조 로직은 _create_subtitle_image 내부에서 처리
+            style = get_subtitle_style(False) 
+            
             for i, sentence in enumerate(final_segments):
                 # 비례 배분: (내 글자수 / 전체 글자수) * 전체 시간
                 char_ratio = segment_lengths[i] / total_length
@@ -708,10 +750,7 @@ class MotionEffectsComposer:
                 if duration > 1.5 and seg_duration < 0.5:
                      seg_duration = max(0.2, seg_duration)
 
-                is_impactful = is_impact_text(sentence)
-                style = get_subtitle_style(is_impactful)
-                
-                # Create image using Pillow
+                # Create image using Pillow (Partial Coloring Logic Inside)
                 img_array = self._create_subtitle_image(sentence, style)
                 
                 if img_array is not None:

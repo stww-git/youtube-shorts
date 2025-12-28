@@ -80,7 +80,8 @@ class RecipeTitleGenerator:
                     model=TEXT_MODEL,
                     contents=[prompt],
                     config=types.GenerateContentConfig(
-                        temperature=TEMPERATURE
+                        temperature=TEMPERATURE,
+                        max_output_tokens=1024,
                     )
                 )
                 
