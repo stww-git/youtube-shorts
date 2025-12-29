@@ -82,24 +82,49 @@ class TitleGenerator:
                     total += letter_spacing
             return total
         
-        # Word wrap: split text into lines that fit within max_width
+        # Balanced Word Wrap
+        # Try to split into 2 lines with similar widths if text exceeds max_width or looks unbalanced
         words = text.split()
-        lines = []
-        current_line = ""
         
-        for word in words:
-            test_line = f"{current_line} {word}".strip() if current_line else word
-            if get_text_width(test_line) <= max_width:
-                current_line = test_line
+        # 1. Check if it fits in one line
+        full_text = " ".join(words)
+        total_text_width = get_text_width(full_text)
+        
+        if total_text_width <= max_width:
+             lines = [full_text]
+        else:
+            # 2. Find best split point for 2 lines
+            # logic: minimize difference between line 1 width and line 2 width
+            best_split_index = -1
+            min_width_diff = float('inf')
+            
+            # Try splitting at every space
+            for i in range(1, len(words)):
+                line1_words = words[:i]
+                line2_words = words[i:]
+                
+                line1 = " ".join(line1_words)
+                line2 = " ".join(line2_words)
+                
+                w1 = get_text_width(line1)
+                w2 = get_text_width(line2)
+                
+                # Check allowing max_width constraint (soft)
+                # Ideally both should be <= max_width, but balance is priority as per request
+                diff = abs(w1 - w2)
+                
+                if diff < min_width_diff:
+                    min_width_diff = diff
+                    best_split_index = i
+            
+            if best_split_index != -1:
+                lines = [
+                    " ".join(words[:best_split_index]),
+                    " ".join(words[best_split_index:])
+                ]
             else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
-        
-        if not lines:
-            lines = [text]
+                # Fallback (shouldn't happen for >1 words)
+                lines = [full_text]
         
         # Calculate total image size
         line_height_px = int(font_size * line_height)

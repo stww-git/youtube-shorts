@@ -99,9 +99,7 @@ class RecipeTitleGenerator:
                             generated_title = line
                             break
                 
-                # 25자 제한
-                if len(generated_title) > 25:
-                    generated_title = generated_title[:25]
+
                 
                 print(f"   ✅ 생성된 제목: {generated_title}")
                 return generated_title
