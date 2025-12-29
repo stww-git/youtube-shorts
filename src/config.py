@@ -9,7 +9,7 @@ Gemini API 모델 설정 파일
 # 텍스트 생성 모델 (Gemini)
 # ============================================
 # 옵션: gemini-3-pro-preview, gemini-3-flash-preview, gemini-2.5-pro, gemini-2.5-flash
-TEXT_MODEL = "gemini-3-pro-preview"
+TEXT_MODEL = "gemini-3-flash-preview"
 
 # ============================================
 # 이미지 생성 모델 (Imagen)
