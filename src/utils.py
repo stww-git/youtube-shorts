@@ -53,3 +53,100 @@ def format_steps(steps: list, max_count: int = 8, max_chars: int = 100) -> str:
             formatted.append(f"{step_num}. {desc[:max_chars]}")
     return "\n".join(formatted)
 
+
+# ==========================================
+# Console Helper Functions
+# ==========================================
+
+def print_header(text):
+    """Print a styled header."""
+    print(f"\n{'🍳'*25}")
+    print(f"  {text}")
+    print(f"{'🍳'*25}")
+
+def print_step(step_num, total_steps, title, status="🔄 진행 중"):
+    """Print a step indicator with progress bar."""
+    progress = "█" * step_num + "░" * (total_steps - step_num)
+    percent = int((step_num / total_steps) * 100)
+    
+    print(f"\n{'='*60}")
+    print(f"  📍 STEP {step_num}/{total_steps}  [{progress}] {percent}%")
+    print(f"{'='*60}")
+    print(f"  📌 {title}")
+    print(f"  ⏳ {status}")
+    print(f"{'='*60}")
+
+def print_step_complete(step_num, total_steps, title):
+    """Print step completion."""
+    print(f"\n{'─'*60}")
+    print(f"  ✅ STEP {step_num}/{total_steps} 완료: {title}")
+    print(f"{'─'*60}")
+
+def print_substep(text):
+    """Print a sub-step or detail."""
+    print(f"   ▶ {text}")
+
+def print_success(text):
+    """Print a success message."""
+    print(f"   ✅ {text}")
+
+def print_warning(text):
+    """Print a warning message."""
+    print(f"   ⚠️  {text}")
+
+def print_error(text):
+    """Print an error message."""
+    print(f"   ❌ {text}")
+
+def print_info(text):
+    """Print an info message."""
+    print(f"   ℹ️  {text}")
+
+
+# ==========================================
+# File System Helper Functions
+# ==========================================
+
+def sanitize_filename(filename: str) -> str:
+    """Remove or replace characters that are not safe for filenames."""
+    import re
+    filename = re.sub(r'[<>:"/\\|?*#!@$%^&()\[\]{}+=~`\';,]', '', filename)
+    filename = re.sub(r'\s+', ' ', filename)
+    filename = filename.strip(' .')
+    if len(filename) > 80:
+        filename = filename[:80]
+    return filename
+
+def create_output_folder(recipe_title: str) -> str:
+    """Create output folder with recipe title and date."""
+    import os
+    from datetime import datetime
+    
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    safe_title = sanitize_filename(recipe_title)
+    
+    if not safe_title or len(safe_title.strip()) == 0:
+        safe_title = "recipe"
+    
+    folder_name = f"{safe_title}_{date_str}"
+    
+    if not os.path.exists("output"):
+        os.makedirs("output", exist_ok=True)
+    
+    output_dir = os.path.join("output", folder_name)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    return output_dir
+
+def check_environment():
+    """Check if necessary API keys are present."""
+    import os
+    import sys
+    
+    required_keys = ["GOOGLE_API_KEY"]
+    missing_keys = [key for key in required_keys if not os.getenv(key)]
+    
+    if missing_keys:
+        print(f"❌ Error: Missing API keys in .env file: {', '.join(missing_keys)}")
+        sys.exit(1)
+    print_success("Environment check passed. API keys loaded.")

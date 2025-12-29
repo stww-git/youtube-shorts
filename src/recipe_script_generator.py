@@ -9,7 +9,7 @@ import time
 import logging
 from google import genai
 from google.genai import types
-from src.config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from src.config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
 from src.prompts import RECIPE_SCRIPT_GENERATION_PROMPT
 from src.utils import format_ingredients, format_steps
 

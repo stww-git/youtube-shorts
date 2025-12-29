@@ -34,8 +34,8 @@ SUBTITLE_Y_POSITION = int(VIDEO_HEIGHT * SUBTITLE_Y_RATIO)
 # ============================================
 
 # 폰트 설정
-SUBTITLE_FONT_SIZE = 80
-SUBTITLE_FONT_PATH = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+FONT_DIR = os.path.join(os.getcwd(), "fonts")
+SUBTITLE_FONT_PATH = os.path.join(FONT_DIR, "nanumsquare", "NanumSquareB.ttf")
 
 # 자막 너비 (좌우 여백 포함)
 # 1080px 화면에서 960px = 좌우 60px 여백
@@ -45,6 +45,7 @@ SUBTITLE_MAX_WIDTH = 960
 SUBTITLE_TEXT_COLOR = 'white'
 SUBTITLE_STROKE_COLOR = 'black'
 SUBTITLE_STROKE_WIDTH = 10
+SUBTITLE_FONT_SIZE = 80  # 기본 자막 폰트 크기
 
 # ============================================
 # 키워드별 색상 설정 (Intonation-based Coloring)

@@ -4,7 +4,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from src.config import IMAGE_MODEL, IMAGE_NEGATIVE_PROMPT, IMAGE_MAX_WORKERS
+from src.config.model_config import IMAGE_MODEL
+from src.config.image_config import IMAGE_NEGATIVE_PROMPT, IMAGE_MAX_WORKERS
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +237,36 @@ class ImageGenerator:
                     raise Exception(f"Image generation failed for Scene {idx}: {error}")
         
         print(f"\n   ✅ 배치 생성 완료: {completed}/{len(prompts)}개 성공\n")
+        print(f"\n   ✅ 배치 생성 완료: {completed}/{len(prompts)}개 성공\n")
+        return generated_paths
+
+    def generate_placeholder_batch(self, prompts: list, output_dir: str):
+        """
+        Generates a batch of placeholder images locally (No API cost).
+        Used for testing the video pipeline.
+        
+        Args:
+            prompts: List of prompts (used for text on placeholder)
+            output_dir: Output directory
+            
+        Returns:
+            List of generated image paths
+        """
+        print(f"\n   🧪 [테스트 모드] 플레이스홀더 이미지 생성 중...")
+        print(f"   총 {len(prompts)}개 이미지\n")
+        
+        generated_paths = []
+        for idx, prompt in enumerate(prompts, 1):
+            output_path = os.path.join(output_dir, f"scene_{idx}.png")
+            path = self._create_placeholder(prompt, output_path)
+            if path:
+                generated_paths.append(path)
+                print(f"      ✅ Scene {idx} (Placeholder): {path}")
+            else:
+                generated_paths.append(None)
+                print(f"      ❌ Scene {idx} (Placeholder): Failed")
+                
+        print(f"\n   ✅ 플레이스홀더 생성 완료\n")
         return generated_paths
 
 if __name__ == "__main__":

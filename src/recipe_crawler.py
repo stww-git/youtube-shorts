@@ -13,7 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import List, Dict, Optional
-from src.config import MAX_RETRIES, RETRY_DELAY
+from src.config.model_config import MAX_RETRIES, RETRY_DELAY
 
 logger = logging.getLogger(__name__)
 

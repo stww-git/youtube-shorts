@@ -10,7 +10,17 @@ import os
 import logging
 import tempfile
 from PIL import Image, ImageDraw, ImageFont
-from src.config import VIDEO_WIDTH
+from src.config.model_config import VIDEO_WIDTH
+from src.config.title_config import (
+    TITLE_FONT_PATH, 
+    TITLE_FONT_SIZE,
+    TITLE_TEXT_COLOR, 
+    TITLE_STROKE_COLOR, 
+    TITLE_STROKE_WIDTH,
+    TITLE_LETTER_SPACING,
+    TITLE_MAX_WIDTH,
+    TITLE_LINE_HEIGHT
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,23 +35,20 @@ class TitleGenerator:
         Initialize TitleGenerator.
         
         Args:
-            font_path: Path to font file. If not provided, uses default Gungsuh.
+            font_path: Path to font file.
         """
-        if font_path:
-            self.font_path = font_path
-        else:
-            self.font_path = os.path.join(os.getcwd(), "fonts/Gungseouche.ttf")
+        self.font_path = font_path or TITLE_FONT_PATH
     
     def create_title_image(
         self,
         text: str,
-        font_size: int = 100,
-        letter_spacing: int = -30,
-        text_color: str = 'white',
-        stroke_color: str = 'black',
-        stroke_width: int = 0,
-        max_width: int = 800,
-        line_height: float = 1.0,  # 줄간격 배수 (1.0 = 빼곡, 1.3 = 기본, 2.0 = 넓게)
+        font_size: int = TITLE_FONT_SIZE,
+        letter_spacing: int = TITLE_LETTER_SPACING,
+        text_color: str = TITLE_TEXT_COLOR,
+        stroke_color: str = TITLE_STROKE_COLOR,
+        stroke_width: int = TITLE_STROKE_WIDTH,
+        max_width: int = TITLE_MAX_WIDTH,
+        line_height: float = TITLE_LINE_HEIGHT,
         font_path: str = None
     ) -> str:
         """

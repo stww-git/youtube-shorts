@@ -20,30 +20,34 @@ from src.title_generator import create_title_image
 TITLE_TEXT = "카레 돼지고기 바로 볶기 절대 이렇게 하지마세요"
 
 # 폰트 설정
-FONT_PATH = os.path.join(os.getcwd(), "fonts/Gungseouche.ttf")
-FONT_SIZE = 100  # 글자 크기 (px)
+# 폰트 설정
+from src.config.title_config import (
+    TITLE_FONT_PATH,
+    TITLE_TEXT_COLOR,
+    TITLE_STROKE_COLOR,
+    TITLE_STROKE_WIDTH,
+    TITLE_LETTER_SPACING,
+    TITLE_MAX_WIDTH,
+    TITLE_LINE_HEIGHT,
+    get_adaptive_title_style
+)
 
-# 자간 설정 (핵심!)
-# -10: 아주 좁게
-# -5: 좁게 (기본값)
-# 0: 원래대로
-# +5: 넓게
-LETTER_SPACING = -30
+FONT_PATH = TITLE_FONT_PATH
+FONT_SIZE = 100  # 기본값 (테스트용)
+
+# 자간 설정
+LETTER_SPACING = TITLE_LETTER_SPACING
 
 # 색상 설정
-TEXT_COLOR = 'white'       # 글자 색 (white, yellow, #FFD700 등)
-STROKE_COLOR = 'black'     # 테두리 색
-STROKE_WIDTH = 0           # 테두리 두께
+TEXT_COLOR = TITLE_TEXT_COLOR
+STROKE_COLOR = TITLE_STROKE_COLOR
+STROKE_WIDTH = TITLE_STROKE_WIDTH
 
-# 최대 너비 (자동 줄바꿈)
-MAX_WIDTH = 800
+# 최대 너비
+MAX_WIDTH = TITLE_MAX_WIDTH
 
 # 줄간격 설정
-# 1.0: 빼곡하게
-# 1.3: 기본
-# 1.5: 약간 넓게
-# 2.0: 아주 넓게
-LINE_HEIGHT = 1.0
+LINE_HEIGHT = TITLE_LINE_HEIGHT
 
 # ========================================
 

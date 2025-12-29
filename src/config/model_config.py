@@ -14,11 +14,8 @@ TEXT_MODEL = "gemini-3-flash-preview"
 # ============================================
 # 이미지 생성 모델 (Imagen)
 # ============================================
-# 옵션: imagen-4.0-fast-generate-001, imagen-4.0-generate-001
+# 옵션: imagen-4.0-fast-generate-001, imagen-4.0-generate-001, imagen-3.0-generate-002
 IMAGE_MODEL = "imagen-4.0-fast-generate-001"
-
-# 이미지 네거티브 프롬프트 (텍스트/글자 생성 방지)
-IMAGE_NEGATIVE_PROMPT = ", no text, no letters, no words, no writing, no signs, no labels"
 
 # ============================================
 # 음성 생성 모델 (TTS)
@@ -26,9 +23,7 @@ IMAGE_NEGATIVE_PROMPT = ", no text, no letters, no words, no writing, no signs, 
 # 옵션: gemini-2.5-flash-preview-tts
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
 
-# TTS 음성 설정
-# 옵션: Kore (여성), Aoede (여성), Charon (남성), Fenrir (남성), Puck (남성)
-TTS_VOICE = "Kore"
+# TTS 음성 설정은 src/audio_config.py로 이동됨
 
 # ============================================
 # API 호출 설정
@@ -59,9 +54,3 @@ VIDEO_PRESET = "medium"  # ultrafast, fast, medium, slow, veryslow
 
 # 렌더링 스레드 수
 VIDEO_THREADS = 4
-
-# ============================================
-# 이미지 생성 설정 (Image Generation)
-# ============================================
-# 병렬 처리 worker 수
-IMAGE_MAX_WORKERS = 3

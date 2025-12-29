@@ -6,7 +6,8 @@ import time
 from gtts import gTTS
 from google import genai
 from google.genai import types
-from src.config import TTS_MODEL, TTS_VOICE, MAX_RETRIES, RETRY_DELAY
+from src.config.model_config import TTS_MODEL, MAX_RETRIES, RETRY_DELAY
+from src.config.audio_config import TTS_VOICE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ class AudioGenerator:
             output_path: Output file path (will be saved as MP3 or WAV)
             voice: Voice name for Gemini TTS (default: from config)
         """
-        voice = voice or TTS_VOICE
+        voice = voice or TTS_VOICE_NAME
         logger.info(f"Generating speech for: {text[:20]}...")
         print(f"\n   🎤 [오디오 생성 시작]")
         print(f"   텍스트: {text[:100]}{'...' if len(text) > 100 else ''}")
@@ -181,7 +182,7 @@ class AudioGenerator:
         Returns:
             분할된 오디오 파일 경로 목록
         """
-        voice = voice or TTS_VOICE
+        voice = voice or TTS_VOICE_NAME
         
         # 0. 기존 오디오 파일 정리 (WAV만 사용, MP3 제거)
         import glob
@@ -305,12 +306,8 @@ class AudioGenerator:
         chunks = None
         
         # 단계적으로 silence threshold 조정
-        silence_configs = [
-            {"min_silence_len": 400, "silence_thresh": -35, "keep_silence": 150},
-            {"min_silence_len": 300, "silence_thresh": -40, "keep_silence": 100},
-            {"min_silence_len": 250, "silence_thresh": -45, "keep_silence": 80},
-            {"min_silence_len": 200, "silence_thresh": -50, "keep_silence": 50},
-        ]
+        from src.config.audio_config import SILENCE_CONFIGS
+        silence_configs = SILENCE_CONFIGS
         
         for config in silence_configs:
             chunks = split_on_silence(

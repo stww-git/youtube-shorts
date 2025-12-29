@@ -16,8 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 # ============================================
 #   📐 화면 크기 설정
 # ============================================
-VIDEO_WIDTH = 1080
-VIDEO_HEIGHT = 1920
+from src.config.model_config import VIDEO_WIDTH, VIDEO_HEIGHT
 
 # ============================================
 #   📝 테스트할 자막 텍스트
@@ -27,13 +26,21 @@ SUBTITLE_TEXT = "작은 팬에 올리브오일을 끓여 마늘 페페론치노�
 # ============================================
 #   📍 자막 설정
 # ============================================
-SUBTITLE_Y_RATIO = 0.55   # 위치 (0.55 = 55%)
+from src.config.subtitle_config import (
+    SUBTITLE_FONT_PATH,
+    SUBTITLE_Y_RATIO,
+    SUBTITLE_TEXT_COLOR,
+    SUBTITLE_STROKE_COLOR,
+    SUBTITLE_STROKE_WIDTH,
+    SUBTITLE_MAX_WIDTH
+)
+
+FONT_PATH = SUBTITLE_FONT_PATH
 FONT_SIZE = 80
-FONT_PATH = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-TEXT_COLOR = 'white'
-STROKE_COLOR = 'black'
-STROKE_WIDTH = 10
-MAX_WIDTH = 960          # 줄바꿈 기준 너비
+TEXT_COLOR = SUBTITLE_TEXT_COLOR
+STROKE_COLOR = SUBTITLE_STROKE_COLOR
+STROKE_WIDTH = SUBTITLE_STROKE_WIDTH
+MAX_WIDTH = SUBTITLE_MAX_WIDTH
 
 # ============================================
 

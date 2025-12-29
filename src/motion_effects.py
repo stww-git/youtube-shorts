@@ -5,7 +5,7 @@ from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, 
 from typing import List, Dict
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from src.config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
+from src.config.model_config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
 from src.title_generator import create_title_image
 
 logger = logging.getLogger(__name__)
@@ -170,21 +170,12 @@ class MotionEffectsComposer:
                 # YouTube Shorts top margin: avoid overlapping with channel icon/follow button
                 TOP_MARGIN = 100
                 
-                # Adaptive Font Sizing Strategy
-                title_len = len(first_sentence)
-                if title_len < 15:
-                    font_size = 120
-                    line_height_factor = 1.2
-                elif title_len < 25:
-                    font_size = 100
-                    line_height_factor = 1.25
-                else:
-                    font_size = 80
-                    line_height_factor = 1.3
-                
-                # Use local Gungsuh font
-                title_font = os.path.join(os.getcwd(), "fonts/Gungseouche.ttf")
+                from src.config.title_config import TITLE_FONT_PATH, get_adaptive_title_style
+                title_font = TITLE_FONT_PATH
                 title_text = first_sentence
+                
+                # Adaptive Font Sizing
+                font_size, line_height_factor = get_adaptive_title_style(len(title_text))
                 
                 # === NEW: Pillow-based title generation (tight letter spacing) ===
                 use_pillow_title = True  # Set to False to use old TextClip method
@@ -195,18 +186,13 @@ class MotionEffectsComposer:
                         title_image_path = create_title_image(
                             text=title_text,
                             font_size=font_size,
-                            letter_spacing=-30,  # 자간: 좁게
-                            text_color='white',
-                            stroke_color='black',
-                            stroke_width=0,      # 테두리 없음
-                            max_width=800,       # 좁은 너비
-                            line_height=1.0,     # 줄간격: 빼곡하게
                             font_path=title_font
                         )
                         
                         # Load as ImageClip
                         title_clip = ImageClip(title_image_path)
-                        title_clip = title_clip.with_duration(final_video.duration)
+                        # Fix: Use _set_exact_duration for compatibility
+                        title_clip = self._set_exact_duration(title_clip, final_video.duration)
                         
                         # Get actual image dimensions for background
                         from PIL import Image as PILImage
@@ -557,15 +543,26 @@ class MotionEffectsComposer:
     def _create_subtitle_image(self, text, style):
         """Creates a subtitle image using Pillow to avoid MoviePy trimming issues."""
         try:
-            from src.subtitle_config import get_keyword_color
+
             
             # Unpack style
             font_path = style.get('font_path', self.font)
             font_size = style.get('font_size', 80)
-            text_color = style.get('text_color', 'white')
-            stroke_color = style.get('stroke_color', 'black')
-            stroke_width = style.get('stroke_width', 3)
-            max_width = style.get('max_width', 960)
+            from src.config.subtitle_config import (
+                get_keyword_color, 
+                SUBTITLE_TEXT_COLOR, 
+                SUBTITLE_STROKE_COLOR, 
+                SUBTITLE_STROKE_WIDTH, 
+                SUBTITLE_MAX_WIDTH
+            )
+            
+            # Unpack style with config defaults
+            font_path = style.get('font_path', self.font)
+            font_size = style.get('font_size', 80)
+            text_color = style.get('text_color', SUBTITLE_TEXT_COLOR)
+            stroke_color = style.get('stroke_color', SUBTITLE_STROKE_COLOR)
+            stroke_width = style.get('stroke_width', SUBTITLE_STROKE_WIDTH)
+            max_width = style.get('max_width', SUBTITLE_MAX_WIDTH)
             
             # Load font
             try:
@@ -682,7 +679,11 @@ class MotionEffectsComposer:
                 # Move to next line
                 current_y += line_heights[line_idx] + line_spacing
             
-            return np.array(img)
+            # Save to temp file to verify transparency support in all MoviePy versions
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:
+                img.save(tf.name)
+                return tf.name
             
         except Exception as e:
             logger.error(f"Failed to create subtitle image: {e}")
@@ -690,7 +691,7 @@ class MotionEffectsComposer:
 
     def _add_subtitle(self, clip, text: str, duration: float):
         """Adds a subtitle overlay to a clip using Pillow for rendering."""
-        from src.subtitle_config import (
+        from src.config.subtitle_config import (
             get_subtitle_style, is_impact_text, 
             SUBTITLE_Y_POSITION
         )
@@ -751,10 +752,12 @@ class MotionEffectsComposer:
                      seg_duration = max(0.2, seg_duration)
 
                 # Create image using Pillow (Partial Coloring Logic Inside)
-                img_array = self._create_subtitle_image(sentence, style)
+                img_path = self._create_subtitle_image(sentence, style)
                 
-                if img_array is not None:
-                    txt_clip = ImageClip(img_array).with_duration(seg_duration)
+                if img_path and os.path.exists(img_path):
+                    txt_clip = ImageClip(img_path)
+                    # Fix: Use _set_exact_duration for compatibility
+                    txt_clip = self._set_exact_duration(txt_clip, seg_duration)
                     
                     # Fixed position
                     try:
@@ -773,6 +776,7 @@ class MotionEffectsComposer:
                 current_time += seg_duration
             
             if subtitle_clips:
+                # Clean up temp files later if possible, but for now OS handles tmp
                 return CompositeVideoClip([clip] + subtitle_clips)
             return clip
                 
