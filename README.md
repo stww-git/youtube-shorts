@@ -1,6 +1,6 @@
 # YouTube Shorts Automation (Recipe-Based) 🍳
 
-이 프로젝트는 **10000recipe.com**에서 레시피를 자동으로 가져와 **YouTube Shorts 영상**을 생성하는 자동화 파이프라인입니다.
+이 프로젝트는 **10000recipe.com**에서 레시피를 자동으로 가져와 **YouTube Shorts 영상**을 생성하는 자동화 파이프라인입니다..
 
 ## 🌟 주요 특징 (Highlights)
 - **레시피 자동 크롤링**: 만개의레시피에서 베스트 레시피 자동 선택
