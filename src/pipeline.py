@@ -34,12 +34,13 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False):
+    def run(self, test_mode: bool = False, image_parallel: bool = True):
         """
         Execute the video generation pipeline.
         
         Args:
             test_mode: If True, uses placeholder images instead of generating new ones via API.
+            image_parallel: If True, generates images in parallel (faster). If False, sequential (safer).
         """
         # ==========================================
         # Step 1: Get Recipe from 10000recipe.com
@@ -198,7 +199,8 @@ class RecipeVideoPipeline:
                 generated_paths = self.image_gen.generate_images_batch(
                     prompts=visual_descriptions,
                     output_dir=output_dir,
-                    style_guide=global_visual_style
+                    style_guide=global_visual_style,
+                    parallel=image_parallel
                 )
             except Exception as e:
                 print_error("이미지 생성 중 치명적 오류 발생!")

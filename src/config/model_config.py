@@ -20,7 +20,7 @@ IMAGE_MODEL = "imagen-4.0-fast-generate-001"
 # ============================================
 # 음성 생성 모델 (TTS)
 # ============================================
-# 옵션: gemini-2.5-flash-preview-tts
+# 옵션: gemini-2.5-flash-preview-tts gemini-2.5-pro-preview-tts
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
 
 # TTS 음성 설정은 src/audio_config.py로 이동됨

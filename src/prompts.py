@@ -201,36 +201,37 @@ IMAGE_PROMPT_GENERATION_PROMPT = """
 - 반드시 영어로 작성
 - 각 장면의 나레이션 내용을 시각적으로 표현
 - 구체적이고 묘사적인 표현 사용
-- 세로 영상(9:16 비율)에 적합한 구도 고려
+- **세로 영상(9:16 비율)에 적합한 구도 고려 (주요 피사체는 중앙 배치, 하단 20%는 비워둘 것)**
+- **텍스트, 글자, 라벨 절대 포함 금지**
 
 [scene별 시각적 역할]
 - scene 1: Hook 질문에 맞는 일반적인 조리 장면 (시청자가 공감할 수 있는 모습)
-- scene 2: 일반적인 방법의 단점이 드러난 요리 상태 (푸석함, 질김, 눌러붙음 등)
-- scene 3: 사람들 흔히 하는 일반적인 조리 동작 (뒤집기, 섞기, 끓이기 등)
+- scene 2: 일반적인 방법의 단점이 드러난 요리 상태 (푸석함, 질김, 눌러붙음 등 부정적 디테일 강조)
+- scene 3: 사람들 흔히 하는 일반적인 조리 동작 (Dynamic Action: 젓기, 붓기, 끓이기)
 - scene 4: 문제의 원인을 시각적으로 보여주는 장면 (잘못된 불 세기, 타이밍 등)
-- scene 5: 숙련된 손길로 조리하는 긍정적인 장면 (기대감 조성)
-- scene 6: 비법을 암시하는 핵심 재료나 도구 클로즈업 (궁금증 유발)
-- scene 7: 밝고 긍정적인 분위기의 조리 장면 (좋아요 유도)
-- scene 8: 완성된 요리의 식욕 자극 클로즈업 (윤기, 김, 질감 강조)
+- scene 5: 숙련된 손길로 조리하는 긍정적인 장면 (Golden Hour Lighting)
+- scene 6: 비법을 암시하는 핵심 재료나 도구 **초근접 접사(Macro Shot)** (궁금증 유발)
+- scene 7: 밝고 긍정적인 분위기의 조리 장면 (Cinematic Lighting)
+- scene 8: 완성된 요리의 식욕 자극 **익스트림 클로즈업** (윤기, 김, 질감, 시즐링 강조)
 
 [스타일 가이드]
-- 음식 전문 사진가 스타일
-- 따뜻한 자연광 또는 soft studio lighting
-- 오버헤드 샷 또는 45도 앵글
-- 배경은 깔끔한 주방, 나무 테이블, 또는 대리석
-- 음식의 질감, 색감, 윤기 강조
-- 손이나 조리도구는 자연스럽게 포함 가능
+- **High-end Commercial Food Photography** (고급 상업 음식 사진 스타일)
+- **Lighting**: Rim lighting (후광) or Backlight to emphasize steam and texture. Soft volumetric lighting.
+- **Composition**: 9:16 Vertical, Subject centered in safe zone. Depth of field (Bokeh) background.
+- **Quality**: 8k resolution, Hyper-realistic, Sharp focus, Highly detailed texture.
+- **Vibe**: Appetizing, Warm, Premium, Clean.
 
 [금지 사항]
-- 텍스트, 글자, 워터마크, 라벨 포함 금지
-- 사람 얼굴 포함 금지
-- 브랜드 로고나 상표 포함 금지
-- 비현실적이거나 만화 같은 표현 금지
-- 지저분하거나 불쾌한 이미지 금지
+- **Text, Letters, Words, watermark, labels, signage** (절대 금지)
+- People's faces (hands are okay)
+- Brand logos
+- Cartoon, illustration, painting style
+- Distorted or unnatural food
+- Messy or unappetizing background (unless specified for Scene 2)
 
 ## 출력 형식 (JSON)
 {{
-    "global_visual_style": "[모든 장면에 적용될 통합 스타일 - 영어로 한 문장]",
+    "global_visual_style": "[모든 장면에 적용될 통합 스타일 - 영어로 한 문장. Lighting, Camera Angle, Tone 포함]",
     "scenes": [
         {{"scene_id": 1, "visual_description": "[영어 이미지 프롬프트]"}},
         {{"scene_id": 2, "visual_description": "[영어 이미지 프롬프트]"}},

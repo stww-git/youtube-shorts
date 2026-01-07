@@ -38,6 +38,11 @@ load_dotenv()
 # True로 설정하면 --test 옵션 없이도 항상 테스트 모드로 실행됩니다.
 TEST_MODE = True
 
+# 이미지 생성 병렬 처리 (True: 빠름, False: 안정적)
+# API Rate Limit 오류가 발생하면 False로 설정하세요.
+IMAGE_PARALLEL = False
+
+
 
 def main():
     print_header("🍳 YouTube Shorts 자동 생성 시스템 (Recipe-Based)")
@@ -56,8 +61,10 @@ def main():
     check_environment()
     
     # Initialize and run pipeline
+    # Initialize and run pipeline
     pipeline = RecipeVideoPipeline()
-    pipeline.run(test_mode=is_test_mode)
+    pipeline.run(test_mode=is_test_mode, image_parallel=IMAGE_PARALLEL)
+
 
 
 if __name__ == "__main__":

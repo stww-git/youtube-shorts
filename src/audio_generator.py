@@ -194,9 +194,11 @@ class AudioGenerator:
                     pass
         
         # 1. 전체 텍스트 조합
-        # 문장 사이에 더 긴 휴식을 위해 마침표와 줄바꿈을 추가
+        # 문장 사이에 명시적인 3초 휴식 태그를 추가하여 분할 정확도 테스트 (사용자 요청)
+        # SSML 태그가 작동하려면 <speak> 태그로 감싸야 함
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ".\n\n".join(texts) + "."
+        inner_text = ' <break time="3s"/> \n'.join(texts)
+        full_text = f"<speak>{inner_text}</speak>"
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
         print(f"   총 {len(scenes)}개 문장을 한 번에 생성합니다")
@@ -259,9 +261,10 @@ class AudioGenerator:
             expected_durations=expected_durations
         )
         
-        # 4. 임시 파일 삭제
+        # 4. 임시 파일 삭제 (사용자 요청으로 보존)
         if os.path.exists(temp_full_audio):
-            os.unlink(temp_full_audio)
+            # os.unlink(temp_full_audio)
+            print(f"   ℹ️  임시 오디오 파일 보존됨: {temp_full_audio}")
         
         # 5. 각 scene에 오디오 경로와 duration 할당
         for idx, (scene, audio_path) in enumerate(zip(scenes, audio_paths)):
