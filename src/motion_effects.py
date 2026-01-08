@@ -170,7 +170,7 @@ class MotionEffectsComposer:
                 # YouTube Shorts top margin: avoid overlapping with channel icon/follow button
                 TOP_MARGIN = 100
                 
-                from src.config.title_config import TITLE_FONT_PATH, get_adaptive_title_style
+                from src.config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, get_adaptive_title_style
                 title_font = TITLE_FONT_PATH
                 title_text = first_sentence
                 
@@ -182,12 +182,12 @@ class MotionEffectsComposer:
                 
                 if use_pillow_title:
                     try:
-                        # Create title image with customized line colors (User Request: Orange, Red)
+                        # Create title image with customized line colors (from config)
                         title_image_path = create_title_image(
                             text=title_text,
                             font_size=font_size,
                             font_path=title_font,
-                            line_colors=['#FF9F1C', '#FF4040']  # Orange, Red
+                            line_colors=TITLE_LINE_COLORS
                         )
                         
                         # Load as ImageClip

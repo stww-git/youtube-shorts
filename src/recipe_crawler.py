@@ -56,7 +56,9 @@ class RecipeCrawler:
     
     def _save_history(self, history: Dict):
         """히스토리 파일 저장"""
-        os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
+        dirname = os.path.dirname(HISTORY_FILE)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
         history["last_updated"] = datetime.now().isoformat()
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
