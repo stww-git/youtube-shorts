@@ -36,7 +36,7 @@ load_dotenv()
 # ==========================================
 # 테스트 모드 (이미지 생성 건너뛰기)
 # True로 설정하면 --test 옵션 없이도 항상 테스트 모드로 실행됩니다.
-TEST_MODE = True
+TEST_MODE = False
 
 # 이미지 생성 병렬 처리 (True: 빠름, False: 안정적)
 # API Rate Limit 오류가 발생하면 False로 설정하세요.
