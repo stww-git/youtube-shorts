@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from src.pipeline import RecipeVideoPipeline
 from src.utils import print_header, check_environment
+from src.config.channel_manager import list_channels, get_channel_config, validate_channel
 
 # Suppress ALL warnings before importing other modules
 warnings.filterwarnings('ignore')
@@ -42,6 +43,59 @@ TEST_MODE = True
 # API Rate Limit 오류가 발생하면 False로 설정하세요.
 IMAGE_PARALLEL = False
 
+# ==========================================
+# 타겟 채널 설정
+# ==========================================
+# channels/ 폴더 내의 채널 폴더명을 입력하세요.
+# 예: "sokpyeonhan" (channels/sokpyeonhan/ 폴더 사용)
+# None으로 설정하면 대화형 선택 또는 기본값(REFRESH_TOKEN) 사용
+TARGET_CHANNEL = "sokpyeonhan"
+
+
+def select_channel_interactive() -> str:
+    """대화형으로 채널을 선택합니다."""
+    import sys
+    
+    if not sys.stdin.isatty():
+        return None
+    
+    channels = list_channels()
+    
+    if not channels:
+        print("\n   ⚠️  등록된 채널이 없습니다. channels/ 폴더를 확인하세요.")
+        return None
+    
+    print("\n   📺 사용 가능한 채널 목록:")
+    print("   " + "-" * 40)
+    
+    for idx, ch in enumerate(channels, 1):
+        print(f"   {idx}. {ch['display_name']} ({ch['id']})")
+    
+    print(f"   {len(channels) + 1}. 기본값 사용 (REFRESH_TOKEN)")
+    print("   " + "-" * 40)
+    
+    try:
+        choice = input(f"   👉 선택 (1-{len(channels) + 1}): ").strip()
+        
+        if not choice:
+            return channels[0]['id'] if channels else None
+        
+        choice_num = int(choice)
+        
+        if 1 <= choice_num <= len(channels):
+            selected = channels[choice_num - 1]
+            print(f"\n   ✅ '{selected['display_name']}' 채널 선택됨")
+            return selected['id']
+        elif choice_num == len(channels) + 1:
+            print("\n   ✅ 기본값(REFRESH_TOKEN) 사용")
+            return None
+        else:
+            print("\n   ⚠️  잘못된 선택입니다. 기본값 사용")
+            return None
+            
+    except (ValueError, EOFError):
+        print("\n   ⚠️  입력 오류. 기본값 사용")
+        return None
 
 
 def main():
@@ -50,10 +104,33 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='YouTube Shorts Generator')
     parser.add_argument('--test', action='store_true', help='Test mode: use placeholder images instead of generating new ones')
+    parser.add_argument('--upload', action='store_true', help='Upload generated video to YouTube')
+    parser.add_argument('--channel', type=str, default=None, help='Target channel ID (folder name in channels/)')
     args = parser.parse_args()
     
     # Check both CLI arg and global constant
     is_test_mode = args.test or TEST_MODE
+    
+    # Determine channel: CLI arg > script constant > interactive selection
+    channel_id = args.channel if args.channel else TARGET_CHANNEL
+    
+    # If no channel specified and running interactively, show selection menu
+    if channel_id is None:
+        channel_id = select_channel_interactive()
+    
+    # Validate channel if specified
+    if channel_id:
+        config = get_channel_config(channel_id)
+        if config:
+            print(f"\n   📺 타겟 채널: {config.get('display_name', channel_id)}")
+            
+            # Validate token availability (only warn, don't block)
+            is_valid, message = validate_channel(channel_id)
+            if not is_valid and args.upload:
+                print(f"   ⚠️  {message}")
+        else:
+            print(f"\n   ⚠️  채널 '{channel_id}' 설정을 찾을 수 없습니다.")
+            print(f"       channels/{channel_id}/config.yaml 파일을 확인하세요.")
     
     if is_test_mode:
         print("\n   🧪 [TEST MODE ENABLED] 이미지 생성을 건너뛰고 플레이스홀더를 사용합니다.\n")
@@ -61,11 +138,16 @@ def main():
     check_environment()
     
     # Initialize and run pipeline
-    # Initialize and run pipeline
     pipeline = RecipeVideoPipeline()
-    pipeline.run(test_mode=is_test_mode, image_parallel=IMAGE_PARALLEL)
+    pipeline.run(
+        test_mode=is_test_mode, 
+        image_parallel=IMAGE_PARALLEL, 
+        upload_to_youtube=args.upload,
+        channel_id=channel_id
+    )
 
 
 
 if __name__ == "__main__":
     main()
+

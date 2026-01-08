@@ -15,6 +15,9 @@ from src.utils import (
     print_warning, print_error, print_info, 
     create_output_folder, sanitize_filename
 )
+from src.config.channel_manager import (
+    get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +37,21 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None):
         """
         Execute the video generation pipeline.
         
         Args:
             test_mode: If True, uses placeholder images instead of generating new ones via API.
             image_parallel: If True, generates images in parallel (faster). If False, sequential (safer).
+            upload_to_youtube: If True, uploads the generated video to YouTube.
+            channel_id: Target channel folder name (e.g., 'sokpyeonhan'). Use default if None.
         """
+        
+        # Load channel-specific prompts if channel_id is specified
+        channel_prompts = None
+        if channel_id:
+            channel_prompts = get_channel_prompts(channel_id)
         # ==========================================
         # Step 1: Get Recipe from 10000recipe.com
         # ==========================================
@@ -241,6 +251,70 @@ class RecipeVideoPipeline:
             recipe.get('url')
         )
         
+        if result and upload_to_youtube:
+            print_step(7, 7, "유튜브 업로드", "🚀 YouTube에 업로드 중")
+            
+            client_id = os.getenv("CLIENT_ID")
+            client_secret = os.getenv("CLIENT_SECRET")
+            
+            # Get refresh token from channel config or fallback to env
+            refresh_token = None
+            upload_config = {}
+            
+            if channel_id:
+                refresh_token = get_refresh_token(channel_id)
+                upload_config = get_upload_config(channel_id)
+            
+            if not refresh_token:
+                refresh_token = os.getenv("REFRESH_TOKEN")
+            
+            if not all([client_id, client_secret, refresh_token]):
+                print_error("업로드 불가: CLIENT_ID, CLIENT_SECRET 또는 REFRESH_TOKEN 환경변수가 없습니다.")
+            else:
+                try:
+                    from src.upload.youtube_uploader import YouTubeUploader
+                    from src.config.upload_config import (
+                        UPLOAD_TITLE_FORMAT as DEFAULT_TITLE_FORMAT,
+                        UPLOAD_DESCRIPTION_TEMPLATE as DEFAULT_DESCRIPTION,
+                        DEFAULT_PRIVACY_STATUS, MADE_FOR_KIDS
+                    )
+                    
+                    uploader = YouTubeUploader(client_id, client_secret, refresh_token)
+                    
+                    # Use channel-specific config or fallback to defaults
+                    title_format = upload_config.get('title_format', DEFAULT_TITLE_FORMAT)
+                    description_template = upload_config.get('description', DEFAULT_DESCRIPTION)
+                    privacy_status = upload_config.get('privacy_status', DEFAULT_PRIVACY_STATUS)
+                    made_for_kids = upload_config.get('made_for_kids', MADE_FOR_KIDS)
+                    tags = upload_config.get('tags', [])
+                    
+                    # 제목과 설명 구성
+                    upload_title = title_format.format(
+                        title=video_title,
+                        category=recipe.get('category', '요리')
+                    )
+                    
+                    upload_description = description_template.format(
+                        title=video_title,
+                        original_title=recipe.get('title'),
+                        url=recipe.get('url', '')
+                    ) if description_template else ""
+                    
+                    video_id = uploader.upload_video(
+                        final_output, 
+                        upload_title, 
+                        upload_description, 
+                        privacy_status=privacy_status,
+                        made_for_kids=made_for_kids,
+                        tags=tags
+                    )
+                    
+                    if video_id:
+                        print_success(f"YouTube 업로드 성공! Video ID: {video_id}")
+                        print(f"   🔗 링크: https://youtube.com/shorts/{video_id}")
+                except Exception as e:
+                    print_error(f"YouTube 업로드 실패: {e}")
+
         # ==========================================
         # Done!
         # ==========================================
@@ -254,5 +328,5 @@ class RecipeVideoPipeline:
        
        📊 Gemini API 호출 횟수: {self.title_gen.get_api_call_count() + self.script_gen.get_api_call_count() + self.image_prompt_gen.get_api_call_count()}회
        
-       ℹ️  다음 단계: '{final_output}'를 YouTube에 업로드하세요!
+       ℹ️  다음 단계: '{final_output}'를 확인하세요!
     """)

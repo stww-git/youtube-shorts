@@ -1,0 +1,14 @@
+# 속편한밥상 채널 설정
+display_name: "속편한밥상"
+env_token_key: "REFRESH_TOKEN_SOKPYEONHAN"
+
+upload:
+  title_format: "{title} #건강 #건강정보"
+  description: ""
+  tags: []
+  category_id: "22"
+  privacy_status: "private"
+  made_for_kids: false
+
+prompts:
+  use_custom: true

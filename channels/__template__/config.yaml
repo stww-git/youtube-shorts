@@ -1,0 +1,37 @@
+# 채널 설정 파일 (Channel Configuration)
+# 이 파일을 수정하여 채널별 업로드 설정을 변경할 수 있습니다.
+
+# 채널 표시 이름 (YouTube에 표시되지 않음, 로컬 식별용)
+display_name: "채널 템플릿"
+
+# 환경변수에서 읽어올 토큰 키 이름
+# .env 또는 GitHub Secrets에 이 이름으로 토큰을 저장해야 합니다.
+# 예: REFRESH_TOKEN_TEMPLATE
+env_token_key: "REFRESH_TOKEN_TEMPLATE"
+
+# 업로드 설정
+upload:
+  # 제목 형식 (사용 가능 변수: {title}, {category})
+  title_format: "{title}"
+  
+  # 설명 (빈 문자열로 두면 설명 없음)
+  # 사용 가능 변수: {title}, {original_title}, {url}
+  description: ""
+  
+  # 태그 (리스트 형태)
+  tags: []
+  
+  # 카테고리 ID (22: People & Blogs, 26: Howto & Style)
+  category_id: "22"
+  
+  # 공개 설정 (private, unlisted, public)
+  privacy_status: "private"
+  
+  # 아동용 컨텐츠 여부
+  made_for_kids: false
+
+# 프롬프트 설정
+prompts:
+  # true: 같은 폴더의 prompts.py 사용
+  # false: 기본 프롬프트(src/prompts.py) 사용
+  use_custom: false

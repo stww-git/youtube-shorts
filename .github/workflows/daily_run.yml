@@ -5,6 +5,15 @@ on:
     # 매일 한국 시간 오전 9시 (UTC 00:00) 실행
     - cron: '0 0 * * *'
   workflow_dispatch:  # 수동 실행 가능
+    inputs:
+      channel:
+        description: '업로드할 채널 ID (channels/ 폴더명)'
+        required: false
+        default: 'sokpyeonhan'
+        type: choice
+        options:
+          - sokpyeonhan
+          # 새 채널 추가 시 여기에 옵션 추가
 
 # 저장소에 쓰기 권한 부여 (History 파일 업데이트용)
 permissions:
@@ -34,11 +43,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ffmpeg
 
-    - name: Run Recipe Generator
+    - name: Run Recipe Video Generator
       env:
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        # 기본 토큰 (스케줄 실행 시 사용)
+        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+        # 채널별 토큰 (새 채널 추가 시 여기에 추가)
+        REFRESH_TOKEN_SOKPYEONHAN: ${{ secrets.REFRESH_TOKEN_SOKPYEONHAN }}
       run: |
-        python main_recipe.py
+        # 스케줄 실행 시 기본 채널, 수동 실행 시 선택한 채널 사용
+        CHANNEL="${{ github.event.inputs.channel || 'sokpyeonhan' }}"
+        python main_recipe.py --channel "$CHANNEL" --upload
 
     - name: Commit and Push History
       run: |
@@ -59,3 +76,4 @@ jobs:
         name: recipe-video
         path: output/**/*.mp4  # output 폴더 및 하위 폴더의 mp4 파일 업로드
         retention-days: 1
+
