@@ -58,4 +58,4 @@ jobs:
       with:
         name: recipe-video
         path: output/**/*.mp4  # output 폴더 및 하위 폴더의 mp4 파일 업로드
-        retention-days: 7
+        retention-days: 1
