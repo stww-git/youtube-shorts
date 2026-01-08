@@ -6,6 +6,10 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:  # 수동 실행 가능
 
+# 저장소에 쓰기 권한 부여 (History 파일 업데이트용)
+permissions:
+  contents: write
+
 jobs:
   generate-video:
     runs-on: ubuntu-latest
