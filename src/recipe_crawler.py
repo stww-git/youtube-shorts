@@ -30,7 +30,7 @@ CATEGORY_ORDER = [
     ("다이어트", "21"),  # 상황별 카테고리
 ]
 
-HISTORY_FILE = "output/recipe_history.json"
+HISTORY_FILE = "recipe_history.json"
 
 
 class RecipeCrawler:

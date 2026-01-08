@@ -36,6 +36,19 @@ jobs:
       run: |
         python main_recipe.py
 
+    - name: Commit and Push History
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # history 파일이 변경되었는지 확인
+        if [ -f recipe_history.json ]; then
+          git add recipe_history.json
+          # 변경사항이 있을 때만 커밋
+          git diff --staged --quiet || git commit -m "Update recipe history [skip ci]"
+          git push
+        fi
+        
     - name: Upload Video Artifact
       uses: actions/upload-artifact@v4
       with:
