@@ -43,6 +43,12 @@ TEST_MODE = True
 # API Rate Limit 오류가 발생하면 False로 설정하세요.
 IMAGE_PARALLEL = False
 
+# 유튜브 업로드 여부
+# True: 영상 생성 후 자동 업로드
+# False: 영상 생성만 (업로드 안 함)
+# 터미널에서 --upload 옵션을 주면 이 설정보다 우선합니다.
+UPLOAD_TO_YOUTUBE = False
+
 # ==========================================
 # 타겟 채널 설정
 # ==========================================
@@ -118,6 +124,9 @@ def main():
     if channel_id is None:
         channel_id = select_channel_interactive()
     
+    # Determine upload: CLI arg takes precedence over script constant
+    should_upload = args.upload or UPLOAD_TO_YOUTUBE
+    
     # Validate channel if specified
     if channel_id:
         config = get_channel_config(channel_id)
@@ -126,7 +135,7 @@ def main():
             
             # Validate token availability (only warn, don't block)
             is_valid, message = validate_channel(channel_id)
-            if not is_valid and args.upload:
+            if not is_valid and should_upload:
                 print(f"   ⚠️  {message}")
         else:
             print(f"\n   ⚠️  채널 '{channel_id}' 설정을 찾을 수 없습니다.")
@@ -135,6 +144,11 @@ def main():
     if is_test_mode:
         print("\n   🧪 [TEST MODE ENABLED] 이미지 생성을 건너뛰고 플레이스홀더를 사용합니다.\n")
     
+    if should_upload:
+        print("   🚀 [UPLOAD ENABLED] 영상 생성 후 YouTube에 업로드됩니다.\n")
+    else:
+        print("   📁 [UPLOAD DISABLED] 영상 생성만 진행됩니다. (업로드 안 함)\n")
+    
     check_environment()
     
     # Initialize and run pipeline
@@ -142,7 +156,7 @@ def main():
     pipeline.run(
         test_mode=is_test_mode, 
         image_parallel=IMAGE_PARALLEL, 
-        upload_to_youtube=args.upload,
+        upload_to_youtube=should_upload,
         channel_id=channel_id
     )
 
