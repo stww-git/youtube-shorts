@@ -16,7 +16,7 @@ from src.utils import (
     create_output_folder, sanitize_filename
 )
 from src.config.channel_manager import (
-    get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token
+    get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token, get_output_dir
 )
 
 logger = logging.getLogger(__name__)
@@ -115,8 +115,9 @@ class RecipeVideoPipeline:
         video_title = self.title_gen.generate_title(recipe, scenes)
         print(f"\n   📌 생성된 제목: {video_title}")
         
-        # Create output folder
-        output_dir = create_output_folder(video_title)
+        # Create output folder (채널별 출력 경로 사용)
+        channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
+        output_dir = create_output_folder(video_title, base_output_dir=channel_output_base)
         print(f"   📁 출력 폴더 생성: {output_dir}")
         
         # Save title and script to file

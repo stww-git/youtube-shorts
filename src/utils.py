@@ -117,8 +117,13 @@ def sanitize_filename(filename: str) -> str:
         filename = filename[:80]
     return filename
 
-def create_output_folder(recipe_title: str) -> str:
-    """Create output folder with recipe title and date."""
+def create_output_folder(recipe_title: str, base_output_dir: str = None) -> str:
+    """Create output folder with recipe title and date.
+    
+    Args:
+        recipe_title: 레시피 제목
+        base_output_dir: 기본 출력 디렉토리 (없으면 project root의 output/ 사용)
+    """
     import os
     from datetime import datetime
     
@@ -130,10 +135,16 @@ def create_output_folder(recipe_title: str) -> str:
     
     folder_name = f"{safe_title}_{date_str}"
     
-    if not os.path.exists("output"):
-        os.makedirs("output", exist_ok=True)
+    # base_output_dir이 지정되면 해당 경로 사용, 아니면 기본 output/ 사용
+    if base_output_dir:
+        output_base = base_output_dir
+    else:
+        output_base = "output"
     
-    output_dir = os.path.join("output", folder_name)
+    if not os.path.exists(output_base):
+        os.makedirs(output_base, exist_ok=True)
+    
+    output_dir = os.path.join(output_base, folder_name)
     os.makedirs(output_dir, exist_ok=True)
     
     return output_dir

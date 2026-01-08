@@ -12,3 +12,10 @@ upload:
 
 prompts:
   use_custom: true
+
+# 채널별 리소스 경로 설정
+# true로 설정하면 채널 폴더 내의 해당 리소스 사용
+paths:
+  use_custom_fonts: false    # channels/sokpyeonhan/fonts/
+  use_custom_output: true    # channels/sokpyeonhan/output/
+  use_custom_config: false   # channels/sokpyeonhan/config/

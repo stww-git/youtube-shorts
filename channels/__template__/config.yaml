@@ -35,3 +35,11 @@ prompts:
   # true: 같은 폴더의 prompts.py 사용
   # false: 기본 프롬프트(src/prompts.py) 사용
   use_custom: false
+
+# 채널별 리소스 경로 설정
+# true로 설정하면 채널 폴더 내의 해당 리소스 사용
+# 해당 폴더가 없으면 기본 프로젝트 리소스 사용 (fallback)
+paths:
+  use_custom_fonts: false    # 채널폴더/fonts/
+  use_custom_output: false   # 채널폴더/output/
+  use_custom_config: false   # 채널폴더/config/

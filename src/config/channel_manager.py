@@ -200,3 +200,79 @@ def validate_channel(channel_id: str) -> tuple[bool, str]:
         return False, f"환경변수 '{env_key}'가 설정되지 않았습니다."
     
     return True, f"채널 '{config.get('display_name', channel_id)}' 준비 완료"
+
+
+# ============================================
+# 채널별 리소스 경로 함수
+# ============================================
+
+def get_fonts_dir(channel_id: str = None) -> Path:
+    """
+    폰트 디렉토리 경로를 반환합니다.
+    
+    채널 설정에서 use_custom_fonts가 True이고 채널 폴더에 fonts/가 있으면 해당 경로,
+    그렇지 않으면 기본 fonts/ 경로를 반환합니다.
+    """
+    default_path = PROJECT_ROOT / "fonts"
+    
+    if not channel_id:
+        return default_path
+    
+    config = get_channel_config(channel_id)
+    if not config:
+        return default_path
+    
+    paths_config = config.get("paths", {})
+    if not paths_config.get("use_custom_fonts", False):
+        return default_path
+    
+    channel_fonts = CHANNELS_DIR / channel_id / "fonts"
+    if channel_fonts.exists():
+        return channel_fonts
+    
+    return default_path
+
+
+def get_output_dir(channel_id: str = None) -> Path:
+    """
+    출력 디렉토리 경로를 반환합니다.
+    
+    채널 설정에서 use_custom_output이 True이면 채널 폴더의 output/,
+    그렇지 않으면 기본 output/ 경로를 반환합니다.
+    폴더가 없으면 자동 생성합니다.
+    """
+    default_path = PROJECT_ROOT / "output"
+    
+    if not channel_id:
+        return default_path
+    
+    config = get_channel_config(channel_id)
+    if not config:
+        return default_path
+    
+    paths_config = config.get("paths", {})
+    if not paths_config.get("use_custom_output", False):
+        return default_path
+    
+    channel_output = CHANNELS_DIR / channel_id / "output"
+    
+    # 폴더가 없으면 생성
+    if not channel_output.exists():
+        channel_output.mkdir(parents=True, exist_ok=True)
+    
+    return channel_output
+
+
+def get_channel_dir(channel_id: str) -> Optional[Path]:
+    """
+    채널 폴더 경로를 반환합니다.
+    """
+    if not channel_id:
+        return None
+    
+    channel_path = CHANNELS_DIR / channel_id
+    if channel_path.exists():
+        return channel_path
+    
+    return None
+
