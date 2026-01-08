@@ -6,9 +6,9 @@ upload:
   title_format: "{title} #건강 #건강정보"
   description: ""
   tags: []
-  category_id: "22"
   privacy_status: "private"
   made_for_kids: false
+  category_id: "26" # 노하우/스타일 (Howto & Style)
 
 prompts:
   use_custom: true
@@ -16,6 +16,6 @@ prompts:
 # 채널별 리소스 경로 설정
 # true로 설정하면 채널 폴더 내의 해당 리소스 사용
 paths:
-  use_custom_fonts: false    # channels/sokpyeonhan/fonts/
-  use_custom_output: true    # channels/sokpyeonhan/output/
-  use_custom_config: false   # channels/sokpyeonhan/config/
+  use_custom_fonts: true     # channels/sokpyeonhan/fonts/ (채널 전용 폰트 사용)
+  use_custom_output: true    # channels/sokpyeonhan/output/ (사용 중)
+  use_custom_config: true    # channels/sokpyeonhan/src/config/ (사용 중)
