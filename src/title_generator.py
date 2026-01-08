@@ -49,7 +49,8 @@ class TitleGenerator:
         stroke_width: int = TITLE_STROKE_WIDTH,
         max_width: int = TITLE_MAX_WIDTH,
         line_height: float = TITLE_LINE_HEIGHT,
-        font_path: str = None
+        font_path: str = None,
+        line_colors: list = None  # New argument for multi-color support
     ) -> str:
         """
         Create a title image with custom letter spacing.
@@ -65,6 +66,7 @@ class TitleGenerator:
             max_width: Maximum width before word wrapping
             line_height: Line spacing multiplier (1.0 = tight, 1.3 = normal, 2.0 = wide)
             font_path: Optional override for font path
+            line_colors: Optional list of colors for each line (overrides text_color)
         
         Returns:
             Path to generated PNG image (transparent background)
@@ -147,10 +149,15 @@ class TitleGenerator:
         
         # Draw each line
         y_offset = stroke_width
-        for line in lines:
+        for i, line in enumerate(lines):
             # Calculate starting x to center the line
             line_width = get_text_width(line)
             x_offset = (img_width - line_width) // 2
+            
+            # Determine color for this line
+            current_color = text_color
+            if line_colors and i < len(line_colors):
+                current_color = line_colors[i]
             
             # Draw character by character with custom spacing
             for char in line:
@@ -164,7 +171,7 @@ class TitleGenerator:
                             draw.text((x_offset + dx, y_offset + dy), char, font=font, fill=stroke_color)
                 
                 # Draw main text
-                draw.text((x_offset, y_offset), char, font=font, fill=text_color)
+                draw.text((x_offset, y_offset), char, font=font, fill=current_color)
                 
                 x_offset += char_width + letter_spacing
             

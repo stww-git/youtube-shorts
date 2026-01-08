@@ -182,11 +182,12 @@ class MotionEffectsComposer:
                 
                 if use_pillow_title:
                     try:
-                        # Create title image with tight letter spacing
+                        # Create title image with customized line colors (User Request: Orange, Red)
                         title_image_path = create_title_image(
                             text=title_text,
                             font_size=font_size,
-                            font_path=title_font
+                            font_path=title_font,
+                            line_colors=['#FF9F1C', '#FF4040']  # Orange, Red
                         )
                         
                         # Load as ImageClip

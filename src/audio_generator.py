@@ -194,10 +194,10 @@ class AudioGenerator:
                     pass
         
         # 1. 전체 텍스트 조합
-        # 문장 사이에 Gemini TTS 전용 [long pause] 토큰을 삽입하여 명시적인 휴식 유도 (사용자 요청)
-        # SSML 태그 대신 텍스트 프롬프트 방식 사용
+        # [수정] 사용자가 구체적으로 요청한 [medium pause] (표준 일시중지, 500ms) 적용
+        # 문장 구분에 가장 효과적임
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ' [long pause] \n'.join(texts)
+        full_text = ' [medium pause] \n'.join(texts)
         # full_text = f"<speak>{inner_text}</speak>"  # SSML Wrapper 제거
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
