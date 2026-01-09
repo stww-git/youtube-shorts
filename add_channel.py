@@ -151,6 +151,7 @@ def update_schedule_yml(channel_id: str, channel_name: str, times: list):
     new_channel_block = f'''
   {channel_id}:
     name: "{channel_name}"
+    enabled: true
     times:
 {times_yaml}
 '''

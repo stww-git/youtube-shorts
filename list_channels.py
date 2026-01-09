@@ -45,11 +45,15 @@ def get_main_py_settings() -> dict:
         enabled = re.search(r'"enabled":\s*(True|False)', block)
         test_mode = re.search(r'"test_mode":\s*(True|False)', block)
         upload = re.search(r'"upload":\s*(True|False)', block)
+        privacy = re.search(r'"privacy":\s*"([^"]+)"', block)
+        allow_fallback = re.search(r'"allow_fallback":\s*(True|False)', block)
         
         settings[channel_id] = {
             'enabled': enabled.group(1) if enabled else 'N/A',
             'test_mode': test_mode.group(1) if test_mode else 'N/A',
             'upload': upload.group(1) if upload else 'N/A',
+            'privacy': privacy.group(1) if privacy else 'N/A',
+            'allow_fallback': allow_fallback.group(1) if allow_fallback else 'N/A',
         }
     
     return settings
@@ -66,7 +70,7 @@ def get_schedule_times() -> dict:
         content = f.read()
     
     # 각 채널의 times 추출
-    pattern = r'(\S+):\s*\n\s*name:[^\n]*\n\s*enabled:\s*(\w+)\s*\n\s*times:\s*\n((?:\s*-\s*"[^"]+"\s*\n)+)'
+    pattern = r'(\S+):\s*\n\s*name:[^\n]*\n\s*enabled:\s*(\w+)[^\n]*\n\s*times:\s*\n((?:\s*-\s*"[^"]+"\s*\n)+)'
     matches = re.findall(pattern, content)
     
     for channel_id, enabled, times_block in matches:
@@ -87,12 +91,12 @@ def display_channels():
     schedules = get_schedule_times()
     
     print()
-    print("=" * 80)
+    print("=" * 100)
     print("📺 채널 목록")
-    print("=" * 80)
-    print()
-    print(f"{'채널 ID':<25} {'활성화':<8} {'테스트':<8} {'업로드':<8} {'스케줄 (KST)'}")
-    print("-" * 80)
+    print("=" * 100)
+    # 헤더 수정
+    print(f"{'채널 ID':<20} {'활성':<5} {'테스트':<5} {'업로드':<5} {'공개':<10} {'FB허용':<7} {'스케줄 (KST)'}")
+    print("-" * 100)
     
     for channel in folders:
         # main.py 설정
@@ -100,25 +104,31 @@ def display_channels():
         enabled = ch_settings.get('enabled', 'N/A')
         test_mode = ch_settings.get('test_mode', 'N/A')
         upload = ch_settings.get('upload', 'N/A')
+        privacy = ch_settings.get('privacy', 'N/A')
+        allow_fallback = ch_settings.get('allow_fallback', 'False') # 기본값 False 간주
         
-        # 활성화 상태 표시
-        enabled_icon = "✅" if enabled == "True" else "❌" if enabled == "False" else "❓"
-        test_icon = "🧪" if test_mode == "True" else "🎬" if test_mode == "False" else "❓"
-        upload_icon = "⬆️" if upload == "True" else "💾" if upload == "False" else "❓"
+        # 활성화 상태 표시 (아이콘 최소화)
+        enabled_icon = "✅" if enabled == "True" else "❌"
+        test_icon = "🧪" if test_mode == "True" else "🎬"
+        upload_icon = "⬆️" if upload == "True" else "💾"
+        fallback_icon = "⭕" if allow_fallback == "True" else "❌"
         
         # 스케줄
         sch = schedules.get(channel, {})
         times = sch.get('times', [])
         schedule_str = ", ".join(times) if times else "설정 없음"
         
-        print(f"{channel:<25} {enabled_icon:<8} {test_icon:<8} {upload_icon:<8} {schedule_str}")
+        # 출력 포맷 (f-string 정렬)
+        print(f"{channel:<20} {enabled_icon:<5} {test_icon:<5} {upload_icon:<5} {privacy:<10} {fallback_icon:<7} {schedule_str}")
     
-    print("-" * 80)
+    print("-" * 100)
     print()
     print("범례:")
-    print("  활성화: ✅ = GitHub Actions 스케줄 실행 / ❌ = 스케줄 비활성화")
-    print("  테스트: 🧪 = 테스트 모드 / 🎬 = 실제 이미지 생성")
-    print("  업로드: ⬆️ = YouTube 업로드 / 💾 = 로컬 저장만")
+    print("  활성: ✅=ON / ❌=OFF")
+    print("  테스트: 🧪=Test / 🎬=Real")
+    print("  업로드: ⬆️=Yes / 💾=Local")
+    print("  공개: public / unlisted / private")
+    print("  FB허용: ⭕=TTS Fallback 허용 / ❌=실패시 종료")
     print()
     print(f"총 {len(folders)}개 채널")
     print()
