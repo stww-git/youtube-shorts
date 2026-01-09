@@ -266,9 +266,12 @@ def update_main_py(channel_id: str):
     # CHANNELS 딕셔너리에 새 채널 추가
     # 패턴: 마지막 채널 설정 블록 뒤, 주석 앞에 삽입
     new_channel_block = f'''    "{channel_id}": {{
-        "test_mode": True,       # True: 테스트 모드
-        "upload": False,         # False: 업로드 안함
-        "parallel": False,
+        "enabled": True,          # True: 스케줄 실행
+        "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
+        "upload": False,          # True: YouTube 업로드
+        "privacy": "private",     # public / unlisted / private
+        "parallel": False,        # True: 이미지 병렬 생성
+        "allow_fallback": False,  # False: 실패 시 바로 종료
     }},'''
     
     # "# 새 채널 추가 시" 주석 찾아서 그 앞에 삽입
