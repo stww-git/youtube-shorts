@@ -1,0 +1,117 @@
+name: 자동 영상 업로드
+
+on:
+  schedule:
+    # 모든 스케줄 시간 (UTC 기준)
+    # sokpyeonhan: 07:00, 12:00, 18:00 KST
+    - cron: '0 22 * * *'   # KST 07:00
+    - cron: '0 3 * * *'    # KST 12:00
+    - cron: '0 9 * * *'    # KST 18:00
+    # test-channel-trial1: 07:30, 12:30, 18:30 KST
+    - cron: '30 22 * * *'  # KST 07:30
+    - cron: '30 3 * * *'   # KST 12:30
+    - cron: '30 9 * * *'   # KST 18:30
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: '업로드할 채널 ID'
+        required: true
+        type: choice
+        options:
+          - sokpyeonhan
+          - test-channel-trial1
+
+permissions:
+  contents: write
+
+env:
+  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+
+jobs:
+  # sokpyeonhan 채널 (07:00, 12:00, 18:00 KST)
+  sokpyeonhan:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'sokpyeonhan' ||
+      github.event_name == 'schedule' && (
+        github.event.schedule == '0 22 * * *' ||
+        github.event.schedule == '0 3 * * *' ||
+        github.event.schedule == '0 9 * * *'
+      )
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        sudo apt-get update && sudo apt-get install -y ffmpeg
+    
+    - name: Generate and Upload Video
+      env:
+        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_SOKPYEONHAN }}
+      run: python main.py --channel sokpyeonhan --upload
+    
+    - name: Update History
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add recipe_history.json 2>/dev/null || true
+        git diff --staged --quiet || git commit -m "Update history (sokpyeonhan) [skip ci]"
+        git push || true
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: sokpyeonhan-${{ github.run_number }}
+        path: channels/sokpyeonhan/output/**/*.mp4
+        retention-days: 1
+
+  # test-channel-trial1 채널 (07:30, 12:30, 18:30 KST)
+  test-channel-trial1:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'test-channel-trial1' ||
+      github.event_name == 'schedule' && (
+        github.event.schedule == '30 22 * * *' ||
+        github.event.schedule == '30 3 * * *' ||
+        github.event.schedule == '30 9 * * *'
+      )
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        sudo apt-get update && sudo apt-get install -y ffmpeg
+    
+    - name: Generate and Upload Video
+      env:
+        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_TEST_CHANNEL_TRIAL1 }}
+      run: python main.py --channel test-channel-trial1 --upload
+    
+    - name: Update History
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add recipe_history.json 2>/dev/null || true
+        git diff --staged --quiet || git commit -m "Update history (test-channel-trial1) [skip ci]"
+        git push || true
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: test-channel-trial1-${{ github.run_number }}
+        path: channels/test-channel-trial1/output/**/*.mp4
+        retention-days: 1

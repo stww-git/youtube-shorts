@@ -1,0 +1,31 @@
+# 채널별 업로드 스케줄 설정
+# 
+# 형식:
+#   채널ID:
+#     times: ["HH:MM", "HH:MM", ...]  # 한국 시간 (KST)
+#
+# 새 채널 추가 시 여기에 추가하면 됩니다.
+# 각 시간에 해당 채널만 독립적으로 실행됩니다.
+
+channels:
+  sokpyeonhan:
+    name: "속편한밥상"
+    times:
+      - "07:00"
+      - "12:00"
+      - "18:00"
+    
+  test-channel-trial1:
+    name: "Test Channel Trial1"
+    times:
+      - "07:30"
+      - "12:30"
+      - "18:30"
+
+# 새 채널 추가 예시:
+#   new-channel-id:
+#     name: "새 채널 이름"
+#     times:
+#       - "08:00"
+#       - "14:00"
+#       - "20:00"
