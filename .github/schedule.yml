@@ -2,14 +2,16 @@
 # 
 # 형식:
 #   채널ID:
-#     times: ["HH:MM", "HH:MM", ...]  # 한국 시간 (KST)
+#     name: "표시 이름"
+#     enabled: true/false    # 스케줄 실행 여부
+#     times: ["HH:MM", ...]  # 한국 시간 (KST)
 #
-# 새 채널 추가 시 여기에 추가하면 됩니다.
-# 각 시간에 해당 채널만 독립적으로 실행됩니다.
+# enabled: false로 설정하면 해당 채널은 스케줄 실행에서 제외됩니다.
 
 channels:
   sokpyeonhan:
     name: "속편한밥상"
+    enabled: true
     times:
       - "07:00"
       - "12:00"
@@ -17,6 +19,7 @@ channels:
     
   test-channel-trial1:
     name: "Test Channel Trial1"
+    enabled: false    # 비활성화됨 - 스케줄 실행 안함
     times:
       - "07:30"
       - "12:30"

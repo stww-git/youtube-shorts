@@ -253,6 +253,39 @@ def update_workflow_yml(channel_id: str, times: list):
     print(f"      ✅ job 추가: {channel_id.replace('-', '_')}")
 
 
+MAIN_PY_FILE = PROJECT_ROOT / "main.py"
+
+
+def update_main_py(channel_id: str):
+    """main.py의 CHANNELS 딕셔너리에 새 채널 추가"""
+    print(f"   📄 main.py 수정...")
+    
+    with open(MAIN_PY_FILE, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # CHANNELS 딕셔너리에 새 채널 추가
+    # 패턴: 마지막 채널 설정 블록 뒤, 주석 앞에 삽입
+    new_channel_block = f'''    "{channel_id}": {{
+        "test_mode": True,       # True: 테스트 모드
+        "upload": False,         # False: 업로드 안함
+        "parallel": False,
+    }},'''
+    
+    # "# 새 채널 추가 시" 주석 찾아서 그 앞에 삽입
+    pattern = r'(\n    # 새 채널 추가 시)'
+    if re.search(pattern, content):
+        content = re.sub(pattern, f'\n{new_channel_block}\\1', content)
+    else:
+        # 패턴이 없으면 CHANNELS = { } 블록 끝에 추가
+        # 마지막 }, 앞에 삽입
+        content = re.sub(r'(\n}\n\n# =)', f'\n{new_channel_block}\\1', content)
+    
+    with open(MAIN_PY_FILE, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    print(f"      ✅ CHANNELS에 '{channel_id}' 추가")
+
+
 def run_get_refresh_token():
     """토큰 발급 실행"""
     print(f"\n🔐 Refresh Token 발급...")
@@ -281,24 +314,28 @@ def create_channel(channel_name: str, schedule: list):
         return False
     
     # Step 1: 템플릿 복사
-    print(f"\n[1/5] 📁 템플릿 복사...")
+    print(f"\n[1/6] 📁 템플릿 복사...")
     shutil.copytree(TEMPLATE_DIR, channel_dir)
     print(f"      ✅ {channel_dir}")
     
     # Step 2: config.yaml 수정
-    print(f"\n[2/5] 📝 config.yaml 수정...")
+    print(f"\n[2/6] 📝 config.yaml 수정...")
     update_config(channel_dir / "config.yaml", channel_name, channel_id)
     
-    # Step 3: schedule.yml 수정
-    print(f"\n[3/5] 📅 schedule.yml 수정...")
+    # Step 3: main.py CHANNELS 수정
+    print(f"\n[3/6] 📄 main.py 수정...")
+    update_main_py(channel_id)
+    
+    # Step 4: schedule.yml 수정
+    print(f"\n[4/6] 📅 schedule.yml 수정...")
     update_schedule_yml(channel_id, channel_name, schedule)
     
-    # Step 4: auto_upload.yml 수정
-    print(f"\n[4/5] ⚙️ auto_upload.yml 수정...")
+    # Step 5: auto_upload.yml 수정
+    print(f"\n[5/6] ⚙️ auto_upload.yml 수정...")
     update_workflow_yml(channel_id, schedule)
     
-    # Step 5: 토큰 발급
-    print(f"\n[5/5] 🔐 Refresh Token 발급...")
+    # Step 6: 토큰 발급
+    print(f"\n[6/6] 🔐 Refresh Token 발급...")
     run_get_refresh_token()
     
     # 완료

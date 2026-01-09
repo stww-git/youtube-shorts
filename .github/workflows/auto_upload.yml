@@ -44,22 +44,35 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check if channel is enabled
+      id: check_enabled
+      run: |
+        ENABLED=$(grep -A5 '"sokpyeonhan"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]')
+        echo "enabled=${ENABLED:-true}" >> $GITHUB_OUTPUT
+        if [ "$ENABLED" = "false" ]; then
+          echo "⏭️ sokpyeonhan 채널이 비활성화됨"
+        fi
+    
     - uses: actions/setup-python@v5
+      if: steps.check_enabled.outputs.enabled != 'false'
       with:
         python-version: '3.11'
         cache: 'pip'
     
     - name: Install dependencies
+      if: steps.check_enabled.outputs.enabled != 'false'
       run: |
         pip install -r requirements.txt
         sudo apt-get update && sudo apt-get install -y ffmpeg
     
     - name: Generate and Upload Video
+      if: steps.check_enabled.outputs.enabled != 'false'
       env:
         REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_SOKPYEONHAN }}
       run: python main.py --channel sokpyeonhan --upload
     
     - name: Update History
+      if: steps.check_enabled.outputs.enabled != 'false'
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
@@ -68,6 +81,7 @@ jobs:
         git push || true
     
     - uses: actions/upload-artifact@v4
+      if: steps.check_enabled.outputs.enabled != 'false'
       with:
         name: sokpyeonhan-${{ github.run_number }}
         path: channels/sokpyeonhan/output/**/*.mp4
@@ -87,22 +101,35 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check if channel is enabled
+      id: check_enabled
+      run: |
+        ENABLED=$(grep -A5 '"test-channel-trial1"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]')
+        echo "enabled=${ENABLED:-true}" >> $GITHUB_OUTPUT
+        if [ "$ENABLED" = "false" ]; then
+          echo "⏭️ test-channel-trial1 채널이 비활성화됨"
+        fi
+    
     - uses: actions/setup-python@v5
+      if: steps.check_enabled.outputs.enabled != 'false'
       with:
         python-version: '3.11'
         cache: 'pip'
     
     - name: Install dependencies
+      if: steps.check_enabled.outputs.enabled != 'false'
       run: |
         pip install -r requirements.txt
         sudo apt-get update && sudo apt-get install -y ffmpeg
     
     - name: Generate and Upload Video
+      if: steps.check_enabled.outputs.enabled != 'false'
       env:
         REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_TEST_CHANNEL_TRIAL1 }}
       run: python main.py --channel test-channel-trial1 --upload
     
     - name: Update History
+      if: steps.check_enabled.outputs.enabled != 'false'
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
@@ -111,6 +138,7 @@ jobs:
         git push || true
     
     - uses: actions/upload-artifact@v4
+      if: steps.check_enabled.outputs.enabled != 'false'
       with:
         name: test-channel-trial1-${{ github.run_number }}
         path: channels/test-channel-trial1/output/**/*.mp4

@@ -41,23 +41,34 @@ load_dotenv()
 # 🎮 사용자 설정 (USER CONFIGURATION)
 # ==============================================================================
 
-# 1. 타겟 채널 설정 (Target Channel)
-#    - channels/ 폴더 내에 있는 채널 ID (폴더명)를 입력하세요.
-#    - 예: "sokpyeonhan", "sample_channel"
-TARGET_CHANNEL = "test-channel-trial1"
+# 1. 실행할 채널 선택 (Active Channel)
+#    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
+ACTIVE_CHANNEL = "test-channel-trial1"
 
-# 2. 동작 모드 설정 (Operation Modes)
-#    - TEST_MODE: True일 경우 이미지 생성 등을 건너뛰고 빠르게 로직만 검증합니다.
-TEST_MODE = True
-
-#    - UPLOAD_TO_YOUTUBE: True일 경우 영상 생성 후 자동으로 유튜브에 업로드합니다.
-#    - 주의: '.env' 파일에 해당 채널의 인증 정보가 설정되어 있어야 합니다.
-UPLOAD_TO_YOUTUBE = False
-
-# 3. 성능 설정 (Performance)
-#    - IMAGE_PARALLEL: 이미지 생성을 병렬로 처리하여 속도를 높입니다.
-#    - 주의: API 사용량 제한(Quota)이 낮을 경우 False로 설정하세요.
-IMAGE_PARALLEL = False
+# 2. 채널별 설정 (Per-Channel Settings)
+#    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
+#    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
+CHANNELS = {
+    "sokpyeonhan": {
+        "enabled": False,         # True: GitHub Actions 스케줄 실행
+        "test_mode": True,      # False: 실제 이미지 생성
+        "upload": False,          # True: YouTube 업로드
+        "parallel": False,        # True: 이미지 병렬 생성
+    },
+    "test-channel-trial1": {
+        "enabled": True,        # False: 스케줄 실행 안함
+        "test_mode": True,       # True: 테스트 모드
+        "upload": False,         # False: 업로드 안함
+        "parallel": False,
+    },
+    # 새 채널 추가 시 아래 형식으로 추가됩니다:
+    # "channel-id": {
+    #     "enabled": True,
+    #     "test_mode": True,
+    #     "upload": False,
+    #     "parallel": False,
+    # },
+}
 
 # ==============================================================================
 
@@ -75,12 +86,21 @@ def main():
     parser.add_argument('--channel', type=str, default=None, help='Target channel ID')
     args = parser.parse_args()
     
-    # 설정 결정
-    is_test_mode = args.test or TEST_MODE
-    should_upload = args.upload or UPLOAD_TO_YOUTUBE
-    channel_id = args.channel if args.channel else TARGET_CHANNEL
+    # 채널 결정 (CLI 인자 > ACTIVE_CHANNEL)
+    channel_id = args.channel if args.channel else ACTIVE_CHANNEL
     
-
+    # 채널별 설정 가져오기
+    if channel_id not in CHANNELS:
+        print(f"   ❌ 채널 '{channel_id}'가 CHANNELS 설정에 없습니다.")
+        print(f"   💡 main.py의 CHANNELS 딕셔너리에 채널을 추가하세요.")
+        return
+    
+    channel_settings = CHANNELS[channel_id]
+    
+    # CLI 인자가 있으면 우선, 없으면 채널 설정 사용
+    is_test_mode = args.test if args.test else channel_settings.get("test_mode", True)
+    should_upload = args.upload if args.upload else channel_settings.get("upload", False)
+    is_parallel = channel_settings.get("parallel", False)
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
