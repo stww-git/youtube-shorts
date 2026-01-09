@@ -13,7 +13,7 @@ on:
         type: choice
         options:
           - sokpyeonhan
-          # 새 채널 추가 시 여기에 옵션 추가
+          - test-channel-trial1
 
 # 저장소에 쓰기 권한 부여 (History 파일 업데이트용)
 permissions:
