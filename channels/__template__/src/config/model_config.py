@@ -1,7 +1,7 @@
 # Gemini API 모델 설정
 TEXT_MODEL = "gemini-2.0-flash"
 IMAGE_MODEL = "imagen-3.0-generate-002"
-TTS_MODEL = "gemini-2.0-flash-exp"
+TTS_MODEL = "gemini-2.5-flash-preview-tts"
 
 # API 재시도 설정
 MAX_RETRIES = 3
