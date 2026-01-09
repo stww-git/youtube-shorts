@@ -141,14 +141,14 @@ def main():
             pipeline = pipeline_module.RecipeVideoPipeline()
             pipeline.run(
                 test_mode=is_test_mode,
-                image_parallel=IMAGE_PARALLEL,
+                image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
                 channel_id=channel_id
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(
                 test_mode=is_test_mode,
-                image_parallel=IMAGE_PARALLEL,
+                image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
                 channel_id=channel_id
             )
