@@ -1,6 +1,6 @@
 # YouTube Shorts 자동 생성 시스템 🍳📹
 
-**10000recipe.com**에서 레시피를 자동으로 가져와 **YouTube Shorts 영상**을 생성하는 자동화 파이프라인입니다...
+**10000recipe.com**에서 레시피를 자동으로 가져와 **YouTube Shorts 영상**을 생성하는 자동화 파이프라인입니다.
 
 ## 🌟 주요 특징
 
