@@ -53,15 +53,17 @@ CHANNELS = {
         "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": True,        # False: 실제 이미지 생성
         "upload": False,          # True: YouTube 업로드
-        "privacy": "private",      # public / unlisted / private
+        "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
+        "allow_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
     },
     "test-channel-trial1": {
         "enabled": True,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
-        "upload": False,           # True: 업로드
+        "upload": False,          # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
+        "allow_fallback": False,  # False: 실패 시 바로 종료
     },
     # 새 채널 추가 시 아래 형식으로 추가됩니다:
     # "channel-id": {
@@ -70,6 +72,7 @@ CHANNELS = {
     #     "upload": False,
     #     "privacy": "private",
     #     "parallel": False,
+    #     "allow_fallback": False,
     # },
 }
 
@@ -104,6 +107,7 @@ def main():
     is_test_mode = args.test if args.test else channel_settings.get("test_mode", True)
     should_upload = args.upload if args.upload else channel_settings.get("upload", False)
     is_parallel = channel_settings.get("parallel", False)
+    allow_fallback = channel_settings.get("allow_fallback", False)
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -143,14 +147,16 @@ def main():
                 test_mode=is_test_mode,
                 image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
-                channel_id=channel_id
+                channel_id=channel_id,
+                allow_fallback=allow_fallback
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(
                 test_mode=is_test_mode,
                 image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
-                channel_id=channel_id
+                channel_id=channel_id,
+                allow_fallback=allow_fallback
             )
         else:
             print(f"   ❌ 채널 '{channel_id}'의 pipeline에 실행 가능한 함수가 없습니다.")

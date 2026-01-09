@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False):
         """
         Execute the video generation pipeline.
         
@@ -46,6 +46,7 @@ class RecipeVideoPipeline:
             image_parallel: If True, generates images in parallel (faster). If False, sequential (safer).
             upload_to_youtube: If True, uploads the generated video to YouTube.
             channel_id: Target channel folder name (e.g., 'sokpyeonhan'). Use default if None.
+            allow_fallback: If True, uses fallback methods (e.g. gTTS) on failure. If False, raises exception.
         """
         
         # Load channel-specific prompts if channel_id is specified
@@ -136,7 +137,7 @@ class RecipeVideoPipeline:
         
         try:
             # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
-            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir)
+            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, allow_fallback=allow_fallback)
         
             print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
             total_duration = sum(s['duration'] for s in scenes)

@@ -169,7 +169,7 @@ class AudioGenerator:
                         
                         raise Exception(f"Gemini TTS failed after {MAX_RETRIES} retries: {error_str}")
 
-    def generate_speech_batch(self, scenes: list, output_dir: str, voice: str = None):
+    def generate_speech_batch(self, scenes: list, output_dir: str, voice: str = None, allow_fallback: bool = False):
         """
         전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
         일관된 톤과 자연스러운 억양을 유지합니다.
@@ -178,6 +178,7 @@ class AudioGenerator:
             scenes: 장면 목록 [{"scene_id": 1, "audio_text": "...", "duration": 5}, ...]
             output_dir: 출력 디렉토리
             voice: 음성 설정 (기본: config에서)
+            allow_fallback: Fallback 허용 여부 (True: gTTS 사용, False: 실패 시 종료)
         
         Returns:
             분할된 오디오 파일 경로 목록
@@ -243,14 +244,18 @@ class AudioGenerator:
             except Exception as e:
                 if attempt >= MAX_RETRIES:
                     print(f"   ⚠️  Gemini TTS 실패: {e}")
-                    print(f"   🔄 gTTS (Google Translate TTS)로 대체합니다.")
-                    try:
-                        tts = gTTS(text=full_text, lang='ko')
-                        tts.save(temp_full_audio)
-                        print(f"   ✅ gTTS 전체 오디오 생성 완료")
-                        break
-                    except Exception as gtts_e:
-                        raise Exception(f"모든 TTS 생성 실패 (Gemini: {e}, gTTS: {gtts_e})")
+                    
+                    if allow_fallback:
+                        print(f"   🔄 gTTS (Google Translate TTS)로 대체합니다.")
+                        try:
+                            tts = gTTS(text=full_text, lang='ko')
+                            tts.save(temp_full_audio)
+                            print(f"   ✅ gTTS 전체 오디오 생성 완료")
+                            break
+                        except Exception as gtts_e:
+                            raise Exception(f"모든 TTS 생성 실패 (Gemini: {e}, gTTS: {gtts_e})")
+                    else:
+                        raise Exception(f"Gemini TTS 실패 (재시도 {MAX_RETRIES}회 초과): {e}")
                 continue
         
         # 3. Silence 기반 분할
