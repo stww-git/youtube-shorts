@@ -47,8 +47,9 @@ jobs:
     - name: Check if channel is enabled
       id: check_enabled
       run: |
-        ENABLED=$(grep -A5 '"sokpyeonhan"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]')
-        echo "enabled=${ENABLED:-true}" >> $GITHUB_OUTPUT
+        ENABLED=$(grep -A5 '"sokpyeonhan"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]' || echo "true")
+        if [ -z "$ENABLED" ]; then ENABLED="true"; fi
+        echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
         if [ "$ENABLED" = "false" ]; then
           echo "⏭️ sokpyeonhan 채널이 비활성화됨"
         fi
@@ -104,8 +105,9 @@ jobs:
     - name: Check if channel is enabled
       id: check_enabled
       run: |
-        ENABLED=$(grep -A5 '"test-channel-trial1"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]')
-        echo "enabled=${ENABLED:-true}" >> $GITHUB_OUTPUT
+        ENABLED=$(grep -A5 '"test-channel-trial1"' main.py | grep '"enabled"' | grep -oE 'True|False' | tr '[:upper:]' '[:lower:]' || echo "true")
+        if [ -z "$ENABLED" ]; then ENABLED="true"; fi
+        echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
         if [ "$ENABLED" = "false" ]; then
           echo "⏭️ test-channel-trial1 채널이 비활성화됨"
         fi

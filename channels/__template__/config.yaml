@@ -40,7 +40,7 @@ prompts:
   # true: 같은 폴더의 prompts.py 사용 (채널 전용 말투 적용)
   # false: 기본 프롬프트(src/prompts.py) 사용
   # 예: true (속편한밥상은 전용 프롬프트 사용)
-  use_custom: false
+  use_custom: true
 
 # 채널별 리소스 경로 설정
 # true로 설정하면 채널 폴더 내의 해당 리소스 사용

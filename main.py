@@ -51,14 +51,16 @@ ACTIVE_CHANNEL = "test-channel-trial1"
 CHANNELS = {
     "sokpyeonhan": {
         "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,      # False: 실제 이미지 생성
+        "test_mode": True,        # False: 실제 이미지 생성
         "upload": False,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
     },
     "test-channel-trial1": {
-        "enabled": True,        # False: 스케줄 실행 안함
-        "test_mode": True,       # True: 테스트 모드
-        "upload": True,         # False: 업로드 안함
+        "enabled": True,          # True: 스케줄 실행
+        "test_mode": True,        # True: 테스트 모드
+        "upload": True,           # True: 업로드
+        "privacy": "private",     # public / unlisted / private
         "parallel": False,
     },
     # 새 채널 추가 시 아래 형식으로 추가됩니다:
@@ -66,6 +68,7 @@ CHANNELS = {
     #     "enabled": True,
     #     "test_mode": True,
     #     "upload": False,
+    #     "privacy": "private",
     #     "parallel": False,
     # },
 }
