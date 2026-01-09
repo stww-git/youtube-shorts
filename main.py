@@ -52,7 +52,7 @@ TEST_MODE = True
 
 #    - UPLOAD_TO_YOUTUBE: True일 경우 영상 생성 후 자동으로 유튜브에 업로드합니다.
 #    - 주의: '.env' 파일에 해당 채널의 인증 정보가 설정되어 있어야 합니다.
-UPLOAD_TO_YOUTUBE = True
+UPLOAD_TO_YOUTUBE = False
 
 # 3. 성능 설정 (Performance)
 #    - IMAGE_PARALLEL: 이미지 생성을 병렬로 처리하여 속도를 높입니다.
