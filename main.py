@@ -154,12 +154,14 @@ def main():
             )
         else:
             print(f"   ❌ 채널 '{channel_id}'의 pipeline에 실행 가능한 함수가 없습니다.")
+            sys.exit(1)
             
     except FileNotFoundError as e:
         print(f"   ❌ {e}")
+        sys.exit(1)
     except Exception as e:
         print(f"   ❌ 파이프라인 실행 오류: {e}")
-        raise
+        sys.exit(1)
 
 
 if __name__ == "__main__":

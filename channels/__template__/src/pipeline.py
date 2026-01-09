@@ -324,8 +324,11 @@ class RecipeVideoPipeline:
                     if video_id:
                         print_success(f"YouTube 업로드 성공! Video ID: {video_id}")
                         print(f"   🔗 링크: https://youtube.com/shorts/{video_id}")
+                    else:
+                        raise Exception("업로드 후 video_id가 반환되지 않았습니다.")
                 except Exception as e:
                     print_error(f"YouTube 업로드 실패: {e}")
+                    raise
 
         # ==========================================
         # Done!
