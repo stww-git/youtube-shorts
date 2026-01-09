@@ -280,7 +280,16 @@ class RecipeVideoPipeline:
                         DEFAULT_PRIVACY_STATUS, MADE_FOR_KIDS
                     )
                     
-                    uploader = YouTubeUploader(client_id, client_secret, refresh_token)
+                    # client_secrets.json 파일 경로
+                    client_secrets_file = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'client_secrets.json')
+                    if not os.path.exists(client_secrets_file):
+                        client_secrets_file = os.path.join(os.getcwd(), 'client_secrets.json')
+                    
+                    # refresh_token을 반환하는 함수 생성
+                    def get_token():
+                        return refresh_token
+                    
+                    uploader = YouTubeUploader(client_secrets_file, get_refresh_token_func=get_token)
                     
                     # Use channel-specific config or fallback to defaults
                     title_format = upload_config.get('title_format', DEFAULT_TITLE_FORMAT)
@@ -288,6 +297,7 @@ class RecipeVideoPipeline:
                     privacy_status = upload_config.get('privacy_status', DEFAULT_PRIVACY_STATUS)
                     made_for_kids = upload_config.get('made_for_kids', MADE_FOR_KIDS)
                     tags = upload_config.get('tags', [])
+                    category_id = upload_config.get('category_id', '22')
                     
                     # 제목과 설명 구성
                     upload_title = title_format.format(
@@ -304,10 +314,11 @@ class RecipeVideoPipeline:
                     video_id = uploader.upload_video(
                         final_output, 
                         upload_title, 
-                        upload_description, 
+                        upload_description,
+                        category_id=category_id,
                         privacy_status=privacy_status,
                         made_for_kids=made_for_kids,
-                        tags=tags
+                        keywords=tags
                     )
                     
                     if video_id:
