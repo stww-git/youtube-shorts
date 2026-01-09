@@ -55,7 +55,7 @@ jobs:
       run: |
         # 스케줄 실행 시 기본 채널, 수동 실행 시 선택한 채널 사용
         CHANNEL="${{ github.event.inputs.channel || 'sokpyeonhan' }}"
-        python main_recipe.py --channel "$CHANNEL" --upload
+        python main.py --channel "$CHANNEL" --upload
 
     - name: Commit and Push History
       run: |
