@@ -107,7 +107,7 @@ def remove_from_workflow_yml(channel_id: str):
     
     # 또는 job_name으로 시도
     if content == new_content:
-        job_pattern2 = rf'\n  {re.escape(channel_id)}:\n    runs-on:.*?(?=\n  \w+:\n    runs-on:|$)'
+        job_pattern2 = rf'\n  {re.escape(job_name)}:\n    runs-on:.*?(?=\n  \w+:\n    runs-on:|$)'
         new_content = re.sub(job_pattern2, '', content, flags=re.DOTALL)
     
     if content != new_content:
