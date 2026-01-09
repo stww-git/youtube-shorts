@@ -47,5 +47,5 @@ prompts:
 # 예: 속편한밥상은 모두 true로 설정하여 독립적으로 운영
 paths:
   use_custom_fonts: true     # 채널폴더/fonts/ (예: GmarketSans)
-  use_custom_output: false   # 채널폴더/output/ (결과물 격리)
-  use_custom_config: false   # 채널폴더/src/config/ (전용 설정)
+  use_custom_output: true   # 채널폴더/output/ (결과물 격리)
+  use_custom_config: true   # 채널폴더/src/config/ (전용 설정)

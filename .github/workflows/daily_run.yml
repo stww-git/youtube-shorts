@@ -74,6 +74,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: recipe-video
-        path: output/**/*.mp4  # output 폴더 및 하위 폴더의 mp4 파일 업로드
+        path: channels/**/output/**/*.mp4  # 채널별 output 폴더의 mp4 파일 업로드
         retention-days: 1
 

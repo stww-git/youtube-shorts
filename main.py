@@ -44,7 +44,7 @@ load_dotenv()
 # 1. 타겟 채널 설정 (Target Channel)
 #    - channels/ 폴더 내에 있는 채널 ID (폴더명)를 입력하세요.
 #    - 예: "sokpyeonhan", "sample_channel"
-TARGET_CHANNEL = "sokpyeonhan"
+TARGET_CHANNEL = "test-channel-trial1"
 
 # 2. 동작 모드 설정 (Operation Modes)
 #    - TEST_MODE: True일 경우 이미지 생성 등을 건너뛰고 빠르게 로직만 검증합니다.
@@ -52,7 +52,7 @@ TEST_MODE = True
 
 #    - UPLOAD_TO_YOUTUBE: True일 경우 영상 생성 후 자동으로 유튜브에 업로드합니다.
 #    - 주의: '.env' 파일에 해당 채널의 인증 정보가 설정되어 있어야 합니다.
-UPLOAD_TO_YOUTUBE = False
+UPLOAD_TO_YOUTUBE = True
 
 # 3. 성능 설정 (Performance)
 #    - IMAGE_PARALLEL: 이미지 생성을 병렬로 처리하여 속도를 높입니다.
