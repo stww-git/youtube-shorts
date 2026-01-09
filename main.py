@@ -59,7 +59,7 @@ CHANNELS = {
     "test-channel-trial1": {
         "enabled": True,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
-        "upload": True,           # True: 업로드
+        "upload": False,           # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
     },
