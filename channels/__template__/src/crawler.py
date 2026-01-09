@@ -30,7 +30,11 @@ CATEGORY_ORDER = [
     ("다이어트", "21"),  # 상황별 카테고리
 ]
 
-HISTORY_FILE = "recipe_history.json"
+from pathlib import Path
+
+# 채널 폴더 내 히스토리 파일 (channels/{channel}/recipe_history.json)
+CHANNEL_DIR = Path(__file__).parent.parent
+HISTORY_FILE = CHANNEL_DIR / "history.json"
 
 
 class RecipeCrawler:

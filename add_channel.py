@@ -235,7 +235,7 @@ def update_workflow_yml(channel_id: str, times: list):
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add recipe_history.json 2>/dev/null || true
+        git add channels/{channel_id}/history.json 2>/dev/null || true
         git diff --staged --quiet || git commit -m "Update history ({channel_id}) [skip ci]"
         git push || true
     

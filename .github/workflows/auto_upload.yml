@@ -75,7 +75,7 @@ jobs:
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add recipe_history.json 2>/dev/null || true
+        git add channels/sokpyeonhan/history.json 2>/dev/null || true
         git diff --staged --quiet || git commit -m "Update history (sokpyeonhan) [skip ci]"
         git push || true
     
@@ -132,7 +132,7 @@ jobs:
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add recipe_history.json 2>/dev/null || true
+        git add channels/test-channel-trial1/history.json 2>/dev/null || true
         git diff --staged --quiet || git commit -m "Update history (test-channel-trial1) [skip ci]"
         git push || true
     
