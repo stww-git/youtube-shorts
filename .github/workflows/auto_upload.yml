@@ -85,6 +85,7 @@ jobs:
         name: sokpyeonhan-${{ github.run_number }}
         path: channels/sokpyeonhan/output/**/*.mp4
         retention-days: 1
+        if-no-files-found: error
 
   test-channel-trial1:
     runs-on: ubuntu-latest
@@ -142,4 +143,5 @@ jobs:
         name: test-channel-trial1-${{ github.run_number }}
         path: channels/test-channel-trial1/output/**/*.mp4
         retention-days: 1
+        if-no-files-found: error
 

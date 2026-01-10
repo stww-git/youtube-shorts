@@ -244,6 +244,7 @@ def update_workflow_yml(channel_id: str, times: list):
         name: {channel_id}-${{{{ github.run_number }}}}
         path: channels/{channel_id}/output/**/*.mp4
         retention-days: 1
+        if-no-files-found: error
 '''
     
     content += new_job

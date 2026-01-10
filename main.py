@@ -43,24 +43,24 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "test-channel-trial1"
+ACTIVE_CHANNEL = "sokpyeonhan"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
 #    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
 CHANNELS = {
     "sokpyeonhan": {
-        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
-        "privacy": "public",      # public / unlisted / private
+        "upload": False,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "allow_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
     },
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
-        "upload": True,          # True: 업로드
+        "upload": False,          # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
         "allow_fallback": False,  # False: 실패 시 바로 종료
