@@ -62,7 +62,7 @@ class RecipeVideoPipeline:
         
         if not recipe:
             print_error("사용 가능한 레시피가 없습니다.")
-            return
+            raise Exception("사용 가능한 레시피가 없습니다.")
         
         original_title = recipe.get('title', '요리 레시피')
         print_success(f"레시피 선택 완료!")
@@ -79,7 +79,7 @@ class RecipeVideoPipeline:
         
         if not script_json:
             print_error("대본 생성 실패!")
-            return
+            raise Exception("대본 생성 실패!")
         
         # Parse JSON
         try:
@@ -96,12 +96,12 @@ class RecipeVideoPipeline:
             if not scenes:
                 print_error("No scenes found in the script.")
                 print(script_json)
-                return
+                raise Exception("No scenes found in the script.")
                 
         except Exception as e:
             print_error(f"Failed to parse script JSON: {e}")
             print(script_json)
-            return
+            raise Exception(f"Failed to parse script JSON: {e}")
 
         print_success(f"Script generated with {len(scenes)} scenes:")
         for scene in scenes:
@@ -200,7 +200,7 @@ class RecipeVideoPipeline:
             except Exception as e:
                 print_error(f"Failed to parse image prompts JSON: {e}")
                 print(image_prompts_json)
-                return
+                raise Exception(f"Failed to parse image prompts JSON: {e}")
             
             # Step 4b: Generate Images
             print_substep("Step 4b: Imagen으로 이미지 생성 중...")
@@ -218,7 +218,7 @@ class RecipeVideoPipeline:
                 print_error("이미지 생성 중 치명적 오류 발생!")
                 print(f"   ❌ {str(e)}")
                 print("\n   ⛔ 프로젝트 실행을 중단합니다.")
-                return
+                raise
         
         # Assign generated paths to scenes
         for idx, scene in enumerate(scenes):
@@ -241,7 +241,7 @@ class RecipeVideoPipeline:
         if not result:
             print_error("영상 합성 실패!")
             print_info(f"이미지와 오디오는 {output_dir} 폴더에 저장되어 있습니다.")
-            return
+            raise Exception("영상 합성 실패!")
         
         print_success(f"Final video saved to {final_output}")
         
