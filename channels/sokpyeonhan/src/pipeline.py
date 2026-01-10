@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private"):
         """
         Execute the video generation pipeline.
         
@@ -47,6 +47,7 @@ class RecipeVideoPipeline:
             upload_to_youtube: If True, uploads the generated video to YouTube.
             channel_id: Target channel folder name (e.g., 'sokpyeonhan'). Use default if None.
             allow_fallback: If True, uses fallback methods (e.g. gTTS) on failure. If False, raises exception.
+            privacy_status: YouTube privacy status ('public', 'unlisted', 'private'). From main.py settings.
         """
         
         # Load channel-specific prompts if channel_id is specified
@@ -295,7 +296,7 @@ class RecipeVideoPipeline:
                     # Use channel-specific config or fallback to defaults
                     title_format = upload_config.get('title_format', DEFAULT_TITLE_FORMAT)
                     description_template = upload_config.get('description', DEFAULT_DESCRIPTION)
-                    privacy_status = upload_config.get('privacy_status', DEFAULT_PRIVACY_STATUS)
+                    # privacy_status는 main.py에서 전달받은 값 사용 (파라미터로 전달됨)
                     made_for_kids = upload_config.get('made_for_kids', MADE_FOR_KIDS)
                     tags = upload_config.get('tags', [])
                     category_id = upload_config.get('category_id', '22')

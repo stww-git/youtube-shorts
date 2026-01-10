@@ -108,6 +108,7 @@ def main():
     should_upload = args.upload if args.upload else channel_settings.get("upload", False)
     is_parallel = channel_settings.get("parallel", False)
     allow_fallback = channel_settings.get("allow_fallback", False)
+    privacy_status = channel_settings.get("privacy", "private")  # main.py의 privacy 설정 사용
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -148,7 +149,8 @@ def main():
                 image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
                 channel_id=channel_id,
-                allow_fallback=allow_fallback
+                allow_fallback=allow_fallback,
+                privacy_status=privacy_status
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(
