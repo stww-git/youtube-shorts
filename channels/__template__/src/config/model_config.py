@@ -1,5 +1,5 @@
 # Gemini API 모델 설정
-TEXT_MODEL = "gemini-2.0-flash"
+TEXT_MODEL = "gemini-2.5-flash-lite"
 IMAGE_MODEL = "imagen-4.0-fast-generate-001"
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
 
