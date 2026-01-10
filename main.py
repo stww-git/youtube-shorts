@@ -60,7 +60,7 @@ CHANNELS = {
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
-        "upload": False,          # True: 업로드
+        "upload": True,          # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
         "allow_fallback": False,  # False: 실패 시 바로 종료
