@@ -45,11 +45,16 @@ jobs:
     - name: Check if channel is enabled
       id: check
       run: |
-        if grep -A3 '"sokpyeonhan"' main.py | grep -q '"enabled": False'; then
-          echo "skip=true" >> $GITHUB_OUTPUT
-          echo "⏭️ sokpyeonhan 채널이 비활성화됨 - 스킵"
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          if grep -A3 '"sokpyeonhan"' main.py | grep -q '"enabled": False'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ sokpyeonhan 채널이 비활성화됨 - 스킵"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
         else
           echo "skip=false" >> $GITHUB_OUTPUT
+          echo "🚀 수동 실행 - enabled 체크 건너뜀"
         fi
     
     - uses: actions/setup-python@v5
@@ -103,11 +108,16 @@ jobs:
     - name: Check if channel is enabled
       id: check
       run: |
-        if grep -A3 '"test-channel-trial1"' main.py | grep -q '"enabled": False'; then
-          echo "skip=true" >> $GITHUB_OUTPUT
-          echo "⏭️ test-channel-trial1 채널이 비활성화됨 - 스킵"
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          if grep -A3 '"test-channel-trial1"' main.py | grep -q '"enabled": False'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ test-channel-trial1 채널이 비활성화됨 - 스킵"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
         else
           echo "skip=false" >> $GITHUB_OUTPUT
+          echo "🚀 수동 실행 - enabled 체크 건너뜀"
         fi
     
     - uses: actions/setup-python@v5

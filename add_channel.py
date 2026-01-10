@@ -216,22 +216,41 @@ def update_workflow_yml(channel_id: str, times: list):
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check if channel is enabled
+      id: check
+      run: |
+        if [ "${{{{{{ github.event_name }}}}}}" = "schedule" ]; then
+          if grep -A3 '"{channel_id}"' main.py | grep -q '"enabled": False'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ {channel_id} 채널이 비활성화됨 - 스킵"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "🚀 수동 실행 - enabled 체크 건너뜀"
+        fi
+    
     - uses: actions/setup-python@v5
+      if: steps.check.outputs.skip != 'true'
       with:
         python-version: '3.11'
         cache: 'pip'
     
     - name: Install dependencies
+      if: steps.check.outputs.skip != 'true'
       run: |
         pip install -r requirements.txt
         sudo apt-get update && sudo apt-get install -y ffmpeg
     
     - name: Generate and Upload Video
+      if: steps.check.outputs.skip != 'true'
       env:
         REFRESH_TOKEN: ${{{{ secrets.{token_key} }}}}
       run: python main.py --channel {channel_id} --upload
     
     - name: Update History
+      if: steps.check.outputs.skip != 'true'
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
@@ -240,6 +259,7 @@ def update_workflow_yml(channel_id: str, times: list):
         git push || true
     
     - uses: actions/upload-artifact@v4
+      if: steps.check.outputs.skip != 'true'
       with:
         name: {channel_id}-${{{{ github.run_number }}}}
         path: channels/{channel_id}/output/**/*.mp4
