@@ -335,14 +335,24 @@ class RecipeVideoPipeline:
         # Done!
         # ==========================================
         print_header("🎉 작업 완료!")
+        
+        # 사용된 모델 정보 가져오기
+        from config.model_config import TEXT_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL
+        
         print(f"""
        📁 출력 폴더: {output_dir}
        📁 Output Files:
           - Video:  {final_output}
           - Images: {output_dir}/scene_*.png
-          - Audio:  {output_dir}/audio_scene_*.mp3
+          - Audio:  {output_dir}/audio_scene_*.wav
        
-       📊 Gemini API 호출 횟수: {self.title_gen.get_api_call_count() + self.script_gen.get_api_call_count() + self.image_prompt_gen.get_api_call_count()}회
+       📊 API 호출 횟수: {self.title_gen.get_api_call_count() + self.script_gen.get_api_call_count() + self.image_prompt_gen.get_api_call_count()}회
+       
+       🤖 사용된 모델:
+          - 텍스트 생성: {TEXT_MODEL}
+          - 이미지 생성: {IMAGE_MODEL}
+          - 이미지 대안: {IMAGE_FALLBACK_MODEL or '없음'} (사용: {self.image_gen.get_fallback_used_count()}회)
+          - TTS: {TTS_MODEL}
        
        ℹ️  다음 단계: '{final_output}'를 확인하세요!
     """)

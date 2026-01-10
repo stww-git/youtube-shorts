@@ -5,8 +5,13 @@
 """
 
 import os
+import sys
 import time
 import logging
+
+# 채널 루트의 prompts.py 사용
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE

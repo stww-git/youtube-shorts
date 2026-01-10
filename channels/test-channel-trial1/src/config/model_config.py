@@ -1,6 +1,7 @@
 # Gemini API 모델 설정
-TEXT_MODEL = "gemini-2.0-flash"
-IMAGE_MODEL = "imagen-3.0-generate-002"
+TEXT_MODEL = "gemini-2.5-flash-lite"
+IMAGE_MODEL = "gemini-2.5-flash-image"
+IMAGE_FALLBACK_MODEL = "imagen-4.0-fast-generate-001"  # 기본 모델 실패 시 대안 (None이면 비활성)
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
 
 # API 재시도 설정
