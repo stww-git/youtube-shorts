@@ -8,8 +8,10 @@ TTS_VOICE_NAME = "Kore"  # Gemini TTS 음성
 SILENCE_CONFIGS = [
     # 1단계: 길고 명확한 무음 기준
     {"min_silence_len": 700, "silence_thresh": -30, "keep_silence": 200},
-    # 2단계: 중간 길이 무음
+    # 2단계: 중간-긴 무음
+    {"min_silence_len": 600, "silence_thresh": -28, "keep_silence": 175},
+    # 3단계: 중간 길이 무음
     {"min_silence_len": 500, "silence_thresh": -25, "keep_silence": 150},
-    # 3단계: 짧은 무음 (민감하게)
-    {"min_silence_len": 300, "silence_thresh": -20, "keep_silence": 100},
+    # 4단계: 짧은 무음 (민감하게)
+    {"min_silence_len": 400, "silence_thresh": -20, "keep_silence": 100},
 ]
