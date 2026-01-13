@@ -542,6 +542,59 @@ class MotionEffectsComposer:
             
         return [text]
     
+    def _split_by_char_ratio(self, words: list, targets: list) -> list:
+        """
+        글자수 비율로 어절 목록을 분할합니다.
+        어절 경계를 유지하면서 목표 글자수에 가장 가까운 지점에서 분할합니다.
+        
+        Args:
+            words: 어절 목록
+            targets: 분할 목표 글자수 리스트 (누적값, 예: [7, 14, 21])
+        
+        Returns:
+            분할된 문자열 리스트
+        """
+        if not words:
+            return []
+        
+        # 각 어절까지의 누적 글자수 계산 (공백 제외)
+        cumulative_chars = []
+        total = 0
+        for w in words:
+            total += len(w)
+            cumulative_chars.append(total)
+        
+        parts = []
+        prev_idx = 0
+        
+        for target in targets[:-1]:  # 마지막 target은 전체 길이이므로 제외
+            # 목표 글자수에 가장 가까운 어절 경계 찾기
+            best_idx = prev_idx
+            min_diff = float('inf')
+            
+            for i in range(prev_idx, len(words)):
+                diff = abs(cumulative_chars[i] - target)
+                if diff < min_diff:
+                    min_diff = diff
+                    best_idx = i
+            
+            # 분할점이 이전과 같으면 최소 1어절 포함
+            if best_idx == prev_idx and prev_idx < len(words) - 1:
+                best_idx = prev_idx
+            
+            # 파트 추가
+            part = " ".join(words[prev_idx:best_idx + 1])
+            if part:
+                parts.append(part)
+            prev_idx = best_idx + 1
+        
+        # 남은 어절 추가
+        if prev_idx < len(words):
+            remaining = " ".join(words[prev_idx:])
+            if remaining:
+                parts.append(remaining)
+        
+        return parts
     
     def _create_subtitle_image(self, text, style):
         """Creates a subtitle image using Pillow to avoid MoviePy trimming issues."""
@@ -714,19 +767,34 @@ class MotionEffectsComposer:
             raw_segments = [s.strip() for s in raw_segments if s.strip()]
             
             final_segments = []
-            MAX_CHARS = 20  # 한 줄 권장 글자수
+            MAX_CHARS = 12  # 한 줄 권장 글자수 (test-channel: 더 짧게 분할)
             
             for seg in raw_segments:
-                if len(seg) <= MAX_CHARS + 5:  # 약간의 여유 허용
+                if len(seg) <= MAX_CHARS + 3:  # 여유 15자 이하
                     final_segments.append(seg)
                 else:
-                    # 2차: 너무 긴 문장은 어절 단위로 반으로 가름
+                    # 글자수 비율 기반 분할 (어절 경계 유지)
                     words = seg.split()
-                    mid = len(words) // 2
-                    part1 = " ".join(words[:mid])
-                    part2 = " ".join(words[mid:])
-                    if part1: final_segments.append(part1)
-                    if part2: final_segments.append(part2)
+                    if len(words) <= 2:
+                        final_segments.append(seg)
+                    else:
+                        # 글자수 비율로 분할점 계산
+                        total_chars = len(seg.replace(" ", ""))  # 공백 제외 글자수
+                        
+                        # 2분할 또는 3분할 결정
+                        if total_chars <= 25:
+                            # 2분할
+                            target = total_chars / 2
+                            parts = self._split_by_char_ratio(words, [target, total_chars])
+                        else:
+                            # 3분할
+                            target1 = total_chars / 3
+                            target2 = target1 * 2
+                            parts = self._split_by_char_ratio(words, [target1, target2, total_chars])
+                        
+                        for p in parts:
+                            if p.strip():
+                                final_segments.append(p.strip())
             
             if not final_segments:
                 return clip

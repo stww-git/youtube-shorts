@@ -61,7 +61,7 @@ CHANNELS = {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
         "upload": False,          # True: 업로드
-        "privacy": "public",     # public / unlisted / private
+        "privacy": "private",     # public / unlisted / private
         "parallel": False,
         "allow_fallback": False,  # False: 실패 시 바로 종료
     },
