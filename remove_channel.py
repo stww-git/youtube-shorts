@@ -102,7 +102,8 @@ def remove_from_workflow_yml(channel_id: str):
         line = lines[i]
         
         # 1. cron 스케줄 주석과 해당 cron 줄들 제거
-        if f'# {channel_id}:' in line:
+        # 패턴: # channel_id 또는 # channel_id:
+        if re.search(rf'#\s*{re.escape(channel_id)}[:\s]', line) or line.strip() == f'# {channel_id}':
             # 주석 줄 스킵
             i += 1
             # 이어지는 cron 줄들 스킵하고 기록
@@ -133,6 +134,11 @@ def remove_from_workflow_yml(channel_id: str):
             else:
                 i += 1
                 continue
+        
+        # 4. jobs 섹션의 채널 주석 제거 (예: "  # tvtv 채널")
+        if re.match(rf'^\s*#\s*{re.escape(channel_id)}\s*(채널)?', line):
+            i += 1
+            continue
         
         new_lines.append(line)
         i += 1
