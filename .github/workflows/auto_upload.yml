@@ -10,6 +10,10 @@ on:
     - cron: '30 22 * * *'
     - cron: '30 3 * * *'
     - cron: '30 9 * * *'
+    # tvtv
+    - cron: '30 21 * * *'  # KST 06:30
+    - cron: '30 2 * * *'  # KST 11:30
+    - cron: '30 8 * * *'  # KST 17:30
   workflow_dispatch:
     inputs:
       channel:
@@ -155,3 +159,5 @@ jobs:
         retention-days: 1
         if-no-files-found: error
 
+
+  # tvtv 채널

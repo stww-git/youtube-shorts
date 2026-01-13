@@ -16,7 +16,7 @@
 # ============================================
 # 🎯 삭제할 채널 ID를 입력하세요
 # ============================================
-CHANNEL_ID = "삭제할채널ID"
+CHANNEL_ID = "tvtv"
 # ============================================
 
 import os
@@ -91,28 +91,63 @@ def remove_from_workflow_yml(channel_id: str):
         return
     
     with open(WORKFLOW_FILE, 'r', encoding='utf-8') as f:
-        content = f.read()
+        lines = f.readlines()
     
-    # 1. cron 스케줄 제거 (채널 관련 주석과 cron 줄)
-    cron_pattern = rf'\n\s*# {re.escape(channel_id)}.*?\n(?:\s*- cron:.*?\n)+'
-    content = re.sub(cron_pattern, '\n', content)
+    new_lines = []
+    skip_until_next_job = False
+    removed_crons = []
     
-    # 2. workflow_dispatch options에서 제거
-    content = re.sub(rf'\n\s*- {re.escape(channel_id)}\n', '\n', content)
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        
+        # 1. cron 스케줄 주석과 해당 cron 줄들 제거
+        if f'# {channel_id}:' in line:
+            # 주석 줄 스킵
+            i += 1
+            # 이어지는 cron 줄들 스킵하고 기록
+            while i < len(lines) and lines[i].strip().startswith('- cron:'):
+                cron_match = re.search(r"'([^']+)'", lines[i])
+                if cron_match:
+                    removed_crons.append(cron_match.group(1))
+                i += 1
+            continue
+        
+        # 2. workflow_dispatch options에서 제거
+        if line.strip() == f'- {channel_id}':
+            i += 1
+            continue
+        
+        # 3. jobs 섹션에서 해당 채널 job 제거
+        # job 이름은 channel_id 그대로 또는 대시를 언더스코어로 변환
+        job_pattern = rf'^  ({re.escape(channel_id)}|{re.escape(channel_id.replace("-", "_"))}):\s*$'
+        if re.match(job_pattern, line):
+            skip_until_next_job = True
+            i += 1
+            continue
+        
+        # 다음 job 시작 감지 (들여쓰기 2칸으로 시작하는 새 키)
+        if skip_until_next_job:
+            if re.match(r'^  [a-zA-Z0-9_-]+:\s*$', line) and not line.startswith('    '):
+                skip_until_next_job = False
+            else:
+                i += 1
+                continue
+        
+        new_lines.append(line)
+        i += 1
     
-    # 3. job 전체 제거
-    job_name = channel_id.replace('-', '_')
-    job_pattern = rf'\n  # {re.escape(channel_id)} 채널.*?(?=\n  # \w|\n  \w+:\n    runs-on:|$)'
-    new_content = re.sub(job_pattern, '', content, flags=re.DOTALL)
+    # if 조건에서 제거된 cron들 제거
+    content = ''.join(new_lines)
+    for cron in removed_crons:
+        # github.event.schedule == 'cron' || 패턴 제거
+        content = re.sub(rf"\s*github\.event\.schedule == '{re.escape(cron)}' \|\|\n", '', content)
+        content = re.sub(rf"\s*github\.event\.schedule == '{re.escape(cron)}'\n", '', content)
     
-    # 또는 job_name으로 시도
-    if content == new_content:
-        job_pattern2 = rf'\n  {re.escape(job_name)}:\n    runs-on:.*?(?=\n  \w+:\n    runs-on:|$)'
-        new_content = re.sub(job_pattern2, '', content, flags=re.DOTALL)
-    
-    if content != new_content:
+    original = ''.join(lines)
+    if original != content:
         with open(WORKFLOW_FILE, 'w', encoding='utf-8') as f:
-            f.write(new_content)
+            f.write(content)
         print(f"   ✅ auto_upload.yml에서 제거")
     else:
         print(f"   ⚠️  auto_upload.yml에서 채널을 찾을 수 없음")
