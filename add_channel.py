@@ -18,7 +18,7 @@
 # ============================================
 # 🎯 여기에 새 채널 이름만 입력하세요
 # ============================================
-CHANNEL_NAME = "새채널이름"
+CHANNEL_NAME = "가족건강TV"
 
 # 업로드 시간 설정 (선택사항)
 # - "AUTO": 기존 채널과 겹치지 않게 자동 계산 (권장)
@@ -288,7 +288,7 @@ def update_main_py(channel_id: str):
     # CHANNELS 딕셔너리에 새 채널 추가
     # 패턴: 마지막 채널 설정 블록 뒤, 주석 앞에 삽입
     new_channel_block = f'''    "{channel_id}": {{
-        "enabled": True,          # True: 스케줄 실행
+        "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private

@@ -10,6 +10,10 @@ on:
     - cron: '30 22 * * *'
     - cron: '30 3 * * *'
     - cron: '30 9 * * *'
+    # tv
+    - cron: '30 21 * * *'  # KST 06:30
+    - cron: '30 2 * * *'  # KST 11:30
+    - cron: '30 8 * * *'  # KST 17:30
   workflow_dispatch:
     inputs:
       channel:
@@ -19,6 +23,7 @@ on:
         options:
           - sokpyeonhan
           - test-channel-trial1
+          - tv
 
 permissions:
   contents: write
@@ -155,3 +160,67 @@ jobs:
         retention-days: 1
         if-no-files-found: error
 
+
+  # tv 채널
+  tv:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'tv' ||
+      github.event_name == 'schedule' && (
+        github.event.schedule == '30 21 * * *' ||
+        github.event.schedule == '30 2 * * *' ||
+        github.event.schedule == '30 8 * * *'
+      )
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check if channel is enabled
+      id: check
+      run: |
+        if [ "${{{ github.event_name }}}" = "schedule" ]; then
+          if grep -A3 '"tv"' main.py | grep -q '"enabled": False'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ tv 채널이 비활성화됨 - 스킵"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "🚀 수동 실행 - enabled 체크 건너뜀"
+        fi
+    
+    - uses: actions/setup-python@v5
+      if: steps.check.outputs.skip != 'true'
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      if: steps.check.outputs.skip != 'true'
+      run: |
+        pip install -r requirements.txt
+        sudo apt-get update && sudo apt-get install -y ffmpeg
+    
+    - name: Generate and Upload Video
+      if: steps.check.outputs.skip != 'true'
+      env:
+        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_TV }}
+      run: python main.py --channel tv --upload
+    
+    - name: Update History
+      if: steps.check.outputs.skip != 'true'
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add channels/tv/history.json 2>/dev/null || true
+        git diff --staged --quiet || git commit -m "Update history (tv) [skip ci]"
+        git push || true
+    
+    - uses: actions/upload-artifact@v4
+      if: steps.check.outputs.skip != 'true'
+      with:
+        name: tv-${{ github.run_number }}
+        path: channels/tv/output/**/*.mp4
+        retention-days: 1
+        if-no-files-found: error
