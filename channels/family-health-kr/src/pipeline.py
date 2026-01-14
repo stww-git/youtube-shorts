@@ -3,7 +3,7 @@ import os
 import re
 import json
 import logging
-from crawler import RecipeCrawler
+from crawler import HealthColumnCrawler  # NHIS 전문가칼럼 크롤러
 from title_generator import RecipeTitleGenerator
 from script_generator import RecipeScriptGenerator
 from image_prompt_generator import ImagePromptGenerator
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 class RecipeVideoPipeline:
     """
-    Orchestrates the entire process of creating a YouTube Short from a recipe.
+    Orchestrates the entire process of creating a YouTube Short from health columns.
     """
     
     def __init__(self):
         print_substep("Initializing modules...")
-        self.crawler = RecipeCrawler()
+        self.crawler = HealthColumnCrawler()  # NHIS 전문가칼럼 크롤러
         self.title_gen = RecipeTitleGenerator()
         self.script_gen = RecipeScriptGenerator()
         self.image_prompt_gen = ImagePromptGenerator()
@@ -55,28 +55,29 @@ class RecipeVideoPipeline:
         if channel_id:
             channel_prompts = get_channel_prompts(channel_id)
         # ==========================================
-        # Step 1: Get Recipe from 10000recipe.com
+        # Step 1: Get Health Column from NHIS
         # ==========================================
-        print_step(1, 6, "레시피 선택", "🍲 10000recipe.com 크롤링 중")
+        print_step(1, 6, "건강 칼럼 선택", "🏥 NHIS 전문가칼럼 크롤링 중")
         
-        recipe = self.crawler.get_next_recipe()
+        column = self.crawler.get_next_column()
         
-        if not recipe:
-            print_error("사용 가능한 레시피가 없습니다.")
-            raise Exception("사용 가능한 레시피가 없습니다.")
+        if not column:
+            print_error("사용 가능한 칼럼이 없습니다.")
+            raise Exception("사용 가능한 칼럼이 없습니다.")
         
-        original_title = recipe.get('title', '요리 레시피')
-        print_success(f"레시피 선택 완료!")
-        print(f"\n   📌 원본 레시피: {original_title}")
-        print(f"   📦 재료: {len(recipe.get('ingredients', []))}개")
-        print(f"   📋 조리단계: {len(recipe.get('steps', []))}개")
+        original_title = column.get('title', '건강 정보')
+        print_success(f"칼럼 선택 완료!")
+        print(f"\n   📌 칼럼 제목: {original_title}")
+        print(f"   🏥 출처: {column.get('source', '알 수 없음')}")
+        print(f"   👨‍⚕️ 집필자: {column.get('author', '알 수 없음')}")
         
         # ==========================================
         # Step 2: Script Generation (대본 먼저 생성)
         # ==========================================
         print_step(2, 6, "대본 생성", "✍️ Gemini AI 작성 중")
         
-        script_json = self.script_gen.generate_script(recipe)
+        # 건강 칼럼 데이터를 스크립트 생성기에 전달
+        script_json = self.script_gen.generate_script(column)
         
         if not script_json:
             print_error("대본 생성 실패!")
@@ -114,7 +115,7 @@ class RecipeVideoPipeline:
         # ==========================================
         print_step(3, 6, "제목 생성", "✨ 대본 기반 제목 생성 중")
         
-        video_title = self.title_gen.generate_title(recipe, scenes)
+        video_title = self.title_gen.generate_title(column, scenes)
         print(f"\n   📌 생성된 제목: {video_title}")
         
         # Create output folder (채널별 출력 경로 사용)
@@ -246,13 +247,7 @@ class RecipeVideoPipeline:
         
         print_success(f"Final video saved to {final_output}")
         
-        # Mark recipe as used
-        self.crawler.mark_as_used(
-            recipe['recipe_id'], 
-            video_title, 
-            recipe.get('category', 'best'),
-            recipe.get('url')
-        )
+        # Column은 get_next_column에서 이미 저장됨 (save_used_article_id 호출)
         
         if result and upload_to_youtube:
             print_step(7, 7, "유튜브 업로드", "🚀 YouTube에 업로드 중")
@@ -304,13 +299,13 @@ class RecipeVideoPipeline:
                     # 제목과 설명 구성
                     upload_title = title_format.format(
                         title=video_title,
-                        category=recipe.get('category', '요리')
+                        category='건강정보'
                     )
                     
                     upload_description = description_template.format(
                         title=video_title,
-                        original_title=recipe.get('title'),
-                        url=recipe.get('url', '')
+                        original_title=column.get('title'),
+                        url=column.get('url', '')
                     ) if description_template else ""
                     
                     video_id = uploader.upload_video(

@@ -43,31 +43,31 @@ class RecipeScriptGenerator:
         """Return total API calls made."""
         return self.api_call_count
 
-    def generate_script(self, recipe: dict) -> str:
+    def generate_script(self, column: dict) -> str:
         """
-        레시피를 바탕으로 8줄 구조의 대본을 생성합니다.
+        건강 칼럼을 바탕으로 8줄 구조의 대본을 생성합니다.
         
         Args:
-            recipe: 레시피 딕셔너리 {title, ingredients, steps, ...}
+            column: 칼럼 딕셔너리 {title, content, source, author, ...}
             
         Returns:
             JSON 형식의 대본 문자열 (실패 시 None)
         """
-        title = recipe.get('title', '요리')
-        steps = format_steps(recipe.get('steps', []))
+        title = column.get('title', '건강 정보')
+        content = column.get('content', '')
         
         prompt = SCRIPT_GENERATION_PROMPT.format(
             title=title,
-            steps=steps
+            content=content
         )
         
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                logger.info(f"Generating recipe script for: {title}")
+                logger.info(f"Generating script for: {title}")
                 if attempt == 1:
-                    print(f"\n--- [DEBUG] Recipe Script Generation ---")
-                    print(f"   레시피: {title}")
-                    print(f"   조리단계: {len(recipe.get('steps', []))}개")
+                    print(f"\n--- [DEBUG] Health Script Generation ---")
+                    print(f"   칼럼 제목: {title}")
+                    print(f"   본문 길이: {len(content)}자")
                     print(f"----------------------------------------")
                 else:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")

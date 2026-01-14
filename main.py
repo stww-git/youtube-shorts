@@ -68,7 +68,7 @@ CHANNELS = {
     "family-health-kr": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
-        "upload": True,          # True: YouTube 업로드
+        "upload": False,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "allow_fallback": False,  # False: 실패 시 바로 종료
