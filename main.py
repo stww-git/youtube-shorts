@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "test-channel-trial1"
+ACTIVE_CHANNEL = "family-health-kr"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -60,15 +60,15 @@ CHANNELS = {
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
-        "upload": False,          # True: 업로드
+        "upload": True,          # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
         "allow_fallback": False,  # False: 실패 시 바로 종료
     },
     "family-health-kr": {
-        "enabled": True,          # True: 스케줄 실행
+        "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
-        "upload": False,          # True: YouTube 업로드
+        "upload": True,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "allow_fallback": False,  # False: 실패 시 바로 종료
