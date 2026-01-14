@@ -178,7 +178,7 @@ jobs:
     - name: Check if channel is enabled
       id: check
       run: |
-        if [ "${{{ github.event_name }}}" = "schedule" ]; then
+        if [ "${{ github.event_name }}" = "schedule" ]; then
           if grep -A3 '"family-health-kr"' main.py | grep -q '"enabled": False'; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "⏭️ family-health-kr 채널이 비활성화됨 - 스킵"

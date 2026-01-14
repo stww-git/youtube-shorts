@@ -219,7 +219,7 @@ def update_workflow_yml(channel_id: str, times: list):
     - name: Check if channel is enabled
       id: check
       run: |
-        if [ "${{{{{{ github.event_name }}}}}}" = "schedule" ]; then
+        if [ "${{{{ github.event_name }}}}" = "schedule" ]; then
           if grep -A3 '"{channel_id}"' main.py | grep -q '"enabled": False'; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "⏭️ {channel_id} 채널이 비활성화됨 - 스킵"
