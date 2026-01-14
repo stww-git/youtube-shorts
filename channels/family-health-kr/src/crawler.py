@@ -136,7 +136,7 @@ class HealthColumnCrawler:
         print(f"   ✅ {len(unique_columns)}개 칼럼 발견")
         return unique_columns[:count]
     
-    def get_column_detail(self, article_id: str) -> Optional[Dict]:
+    def get_column_detail(self, article_id: str, known_title: str = "") -> Optional[Dict]:
         """칼럼 상세 정보 가져오기"""
         url = f"{self.BASE_URL}{self.LIST_URL}?mode=view&articleNo={article_id}"
         
@@ -151,11 +151,12 @@ class HealthColumnCrawler:
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
-                # 제목 추출
-                title = ""
-                title_elem = soup.find('h3') or soup.find('h2')
-                if title_elem:
-                    title = title_elem.get_text(strip=True)
+                # 제목 추출 (이미 알고 있는 제목 우선 사용)
+                title = known_title
+                if not title:
+                    title_elem = soup.find('h3', class_='view_title') or soup.find('h3') or soup.find('h2')
+                    if title_elem:
+                        title = title_elem.get_text(strip=True)
                 
                 # 메타 정보 추출 (출처, 집필자, 날짜)
                 source = ""
@@ -238,8 +239,8 @@ class HealthColumnCrawler:
             if col['article_id'] not in used_ids:
                 print(f"\n   ✅ 선택된 칼럼: {col['title']}")
                 
-                # 상세 정보 가져오기
-                detail = self.get_column_detail(col['article_id'])
+                # 상세 정보 가져오기 (제목 전달)
+                detail = self.get_column_detail(col['article_id'], known_title=col['title'])
                 if detail:
                     # 사용 기록 저장
                     self.save_used_article_id(col['article_id'])
