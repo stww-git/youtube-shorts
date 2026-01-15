@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private"):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False):
         """
         Execute the video generation pipeline.
         
@@ -48,6 +48,7 @@ class RecipeVideoPipeline:
             channel_id: Target channel folder name (e.g., 'sokpyeonhan'). Use default if None.
             allow_fallback: If True, uses fallback methods (e.g. gTTS) on failure. If False, raises exception.
             privacy_status: YouTube privacy status ('public', 'unlisted', 'private'). From main.py settings.
+            include_summary_card: If True, appends a summary checklist card at the end of the video.
         """
         
         # Load channel-specific prompts if channel_id is specified
@@ -235,10 +236,17 @@ class RecipeVideoPipeline:
         # ==========================================
         print_step(6, 6, "최종 영상 합성", "🎞️ MoviePy 합성 중")
         
+        # Generate summary checklist if enabled
+        summary_checklist = None
+        if include_summary_card:
+            article_content = column.get('content', '')
+            if article_content:
+                summary_checklist = self.script_gen.generate_summary(article_content)
+        
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist)
         
         if not result:
             print_error("영상 합성 실패!")

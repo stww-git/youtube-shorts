@@ -13,7 +13,7 @@ from motion_effects import MotionEffectsComposer
 from core.utils import (
     print_header, print_step, print_substep, print_success, 
     print_warning, print_error, print_info, 
-    create_output_folder, sanitize_filename
+    create_output_folder, sanitize_filename, format_steps
 )
 from core.channel_manager import (
     get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token, get_output_dir
@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private"):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False):
         """
         Execute the video generation pipeline.
         
@@ -234,10 +234,18 @@ class RecipeVideoPipeline:
         # ==========================================
         print_step(6, 6, "최종 영상 합성", "🎞️ MoviePy 합성 중")
         
+        # Generate summary checklist if enabled
+        summary_checklist = None
+        if include_summary_card:
+            # For recipe channel, use formatted steps as content
+            recipe_content = format_steps(recipe.get('steps', []))
+            if recipe_content:
+                summary_checklist = self.script_gen.generate_summary(recipe_content)
+        
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist)
         
         if not result:
             print_error("영상 합성 실패!")

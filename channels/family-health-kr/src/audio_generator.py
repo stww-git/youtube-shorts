@@ -337,10 +337,12 @@ class AudioGenerator:
                   f"thresh={config['silence_thresh']}dB → {len(chunks)}개 분할")
             
             if len(chunks) == expected_chunks:
+                print(f"   ✅ 분할 성공! (silence_len={config['min_silence_len']}ms, thresh={config['silence_thresh']}dB)")
                 break
             elif len(chunks) > expected_chunks:
                 # 너무 많이 분할됨 → 인접 chunk 병합
                 chunks = self._merge_chunks(chunks, expected_chunks)
+                print(f"   ✅ 병합 후 분할 완료 (silence_len={config['min_silence_len']}ms, thresh={config['silence_thresh']}dB)")
                 break
         
         # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)

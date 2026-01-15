@@ -31,7 +31,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -159,6 +159,14 @@ class MotionEffectsComposer:
             # If per_scene_audio, each clip already has its audio, so don't add overall audio
             final_video = concatenate_videoclips(clips, method="compose")
             print(f"   ✅ 최종 비디오 길이: {final_video.duration:.2f}초\n")
+            
+            # === Summary Card (핵심 정보 카드) ===
+            if summary_checklist:
+                print(f"   📋 핵심 정보 카드 추가 중...")
+                summary_card = self._create_summary_card(summary_checklist)
+                if summary_card:
+                    final_video = concatenate_videoclips([final_video, summary_card], method="compose")
+                    print(f"   ✅ 핵심 카드 추가 완료 (최종 길이: {final_video.duration:.2f}초)")
             
             # Ensure no duplicate audio: if per_scene_audio, each clip already has audio
             # Don't add overall audio again
@@ -743,6 +751,115 @@ class MotionEffectsComposer:
             
         except Exception as e:
             logger.error(f"Failed to create subtitle image: {e}")
+            return None
+
+    def _create_summary_card(self, checklist: list, duration: float = None):
+        """
+        핵심 정보 카드를 생성합니다 (영상 끝에 붙일 독립 클립).
+        
+        Args:
+            checklist: 체크리스트 문자열 리스트 (예: ["• 물 많이 마시기", ...])
+            duration: 카드 표시 시간 (None이면 config 사용)
+            
+        Returns:
+            ImageClip or None
+        """
+        # 설정 파일에서 불러오기
+        from config.summary_card_config import (
+            CARD_DURATION, MAX_ITEMS, FONT_SIZE, LINE_SPACING,
+            TEXT_COLOR, TEXT_ALIGN, BG_IMAGE, BG_COLOR, FONT_FILE
+        )
+        
+        if not checklist:
+            print(f"      ⚠️ 체크리스트가 비어있어 카드 생성 건너뜀")
+            return None
+        
+        if duration is None:
+            duration = CARD_DURATION
+        
+        try:
+            print(f"\n   📋 [핵심 정보 카드 생성]")
+            
+            # 텍스트 준비 (줄바꿈으로 연결)
+            # 긴 줄은 자동 줄바꿈 (최대 15자)
+            MAX_LINE_CHARS = 15
+            wrapped_lines = []
+            for item in checklist[:MAX_ITEMS]:
+                if len(item) > MAX_LINE_CHARS:
+                    # 공백 기준으로 줄바꿈
+                    words = item.split()
+                    current_line = ""
+                    for word in words:
+                        if len(current_line) + len(word) + 1 <= MAX_LINE_CHARS:
+                            current_line = current_line + " " + word if current_line else word
+                        else:
+                            if current_line:
+                                wrapped_lines.append(current_line)
+                            current_line = "   " + word  # 들여쓰기
+                    if current_line:
+                        wrapped_lines.append(current_line)
+                else:
+                    wrapped_lines.append(item)
+            
+            card_text = "\n".join(wrapped_lines)
+            
+            # 폰트 로드
+            from pathlib import Path
+            if FONT_FILE:
+                font_path = Path(__file__).parent.parent / "fonts" / FONT_FILE
+                try:
+                    font = ImageFont.truetype(str(font_path), FONT_SIZE)
+                except:
+                    font = ImageFont.truetype(self.font, FONT_SIZE) if self.font else ImageFont.load_default()
+            else:
+                try:
+                    font = ImageFont.truetype(self.font, FONT_SIZE) if self.font else ImageFont.load_default()
+                except:
+                    font = ImageFont.load_default()
+            
+            # 텍스트 크기 계산
+            dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            bbox = dummy_draw.textbbox((0, 0), card_text, font=font, spacing=LINE_SPACING)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # 배경 이미지 로드
+            if BG_IMAGE:
+                bg_image_path = Path(__file__).parent.parent / "assets" / BG_IMAGE
+                if bg_image_path.exists():
+                    img = Image.open(str(bg_image_path)).convert('RGB')
+                else:
+                    img = Image.new('RGB', (VIDEO_WIDTH, VIDEO_HEIGHT), BG_COLOR)
+            else:
+                img = Image.new('RGB', (VIDEO_WIDTH, VIDEO_HEIGHT), BG_COLOR)
+            
+            draw = ImageDraw.Draw(img)
+            
+            # 중앙 정렬
+            x = (VIDEO_WIDTH - text_width) / 2
+            y = (VIDEO_HEIGHT - text_height) / 2
+            
+            # 텍스트 그리기
+            draw.multiline_text((x, y), card_text, font=font, fill=TEXT_COLOR, 
+                               spacing=LINE_SPACING, align=TEXT_ALIGN)
+            
+            # 임시 파일로 저장
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:
+                img.save(tf.name)
+                temp_path = tf.name
+            
+            print(f"      ✅ 카드 이미지 생성: {temp_path}")
+            print(f"      ✅ 체크리스트 {len(checklist[:MAX_ITEMS])}개 항목, Duration: {duration}초")
+            
+            # ImageClip 생성
+            card_clip = ImageClip(temp_path).with_duration(duration)
+            
+            return card_clip
+            
+        except Exception as e:
+            print(f"      ❌ 핵심 정보 카드 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def _add_subtitle(self, clip, text: str, duration: float):

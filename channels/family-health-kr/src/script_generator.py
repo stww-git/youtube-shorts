@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT
+from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
 from core.utils import format_ingredients, format_steps
 
 logger = logging.getLogger(__name__)
@@ -100,6 +100,61 @@ class RecipeScriptGenerator:
                     print(f"   원인: {error_str}")
                     print(f"{'❌'*25}\n")
                     return None
+
+    def generate_summary(self, article_content: str) -> list:
+        """
+        건강 칼럼에서 핵심 체크리스트를 추출합니다.
+        
+        Args:
+            article_content: 크롤링된 칼럼 본문
+            
+        Returns:
+            체크리스트 문자열 리스트 (예: ["✓ 아침에 물 한 잔", ...])
+        """
+        prompt = SUMMARY_GENERATION_PROMPT.format(
+            article_content=article_content[:3000]  # 토큰 제한
+        )
+        
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                if attempt == 1:
+                    print(f"\n   📝 [핵심 정보 카드] 체크리스트 추출 중...")
+                else:
+                    print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
+                
+                self._increment_api_call("Summary Generation")
+                response = self.client.models.generate_content(
+                    model=TEXT_MODEL,
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.3  # 낮은 온도로 정확한 추출
+                    )
+                )
+                
+                # JSON 파싱
+                import re
+                import json
+                text = response.text
+                # JSON 블록 추출
+                json_match = re.search(r'\{[\s\S]*\}', text)
+                if json_match:
+                    data = json.loads(json_match.group())
+                    checklist = data.get('checklist', [])
+                    print(f"   ✅ 체크리스트 {len(checklist)}개 추출 완료")
+                    return checklist
+                else:
+                    print(f"   ⚠️ JSON 파싱 실패, 빈 리스트 반환")
+                    return []
+                    
+            except Exception as e:
+                if attempt < MAX_RETRIES:
+                    print(f"   ⚠️ 요약 생성 실패, 재시도 중...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    print(f"   ❌ 요약 생성 최종 실패: {e}")
+                    return []
+        
+        return []
 
 
 if __name__ == "__main__":

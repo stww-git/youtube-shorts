@@ -52,9 +52,9 @@ class HealthColumnCrawler:
             logger.warning(f"히스토리 로드 실패: {e}")
             return set()
     
-    def save_used_article_id(self, article_id: str):
-        """사용한 칼럼 ID 저장"""
-        history = {"used_article_ids": []}
+    def save_used_article_id(self, article_id: str, title: str = ""):
+        """사용한 칼럼 ID 및 제목 저장"""
+        history = {"used_article_ids": [], "article_titles": {}}
         
         if HISTORY_FILE.exists():
             try:
@@ -65,9 +65,15 @@ class HealthColumnCrawler:
         
         if "used_article_ids" not in history:
             history["used_article_ids"] = []
+            
+        if "article_titles" not in history:
+            history["article_titles"] = {}
         
         if article_id not in history["used_article_ids"]:
             history["used_article_ids"].append(article_id)
+            
+        if title:
+            history["article_titles"][article_id] = title
         
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
@@ -238,16 +244,33 @@ class HealthColumnCrawler:
         # 칼럼 목록 가져오기
         columns = self.get_column_list(50)
         
+        # 제외할 키워드 (너무 전문적이거나 정책적인 내용)
+        BLACKLIST_KEYWORDS = [
+            "빅데이터", "4.0", "구축", "표준화", "시스템", "정책", 
+            "통계", "현황", "워크숍", "학회", "포럼", "심포지엄",
+            "MOU", "체결", "협약", "시범사업", "토론회"
+        ]
+        
         # 미사용 칼럼 찾기
         for col in columns:
             if col['article_id'] not in used_ids:
-                print(f"\n   ✅ 선택된 칼럼: {col['title']}")
+                # 1차 제목 필터링
+                title = col['title']
+                if any(keyword in title for keyword in BLACKLIST_KEYWORDS):
+                    print(f"   🚫 스킵 (전문/정책 콘텐츠): {title}")
+                    # 스킵된 것도 사용한 것으로 처리하여 다시 확인하지 않음
+                    self.save_used_article_id(col['article_id'], title)
+                    continue
+                
+                print(f"\n   ✅ 선택된 칼럼: {title}")
                 
                 # 상세 정보 가져오기 (제목 전달)
-                detail = self.get_column_detail(col['article_id'], known_title=col['title'])
+                detail = self.get_column_detail(col['article_id'], known_title=title)
                 if detail:
+
+                        
                     # 사용 기록 저장
-                    self.save_used_article_id(col['article_id'])
+                    self.save_used_article_id(col['article_id'], title)
                     return detail
         
         print("\n   ⚠️ 모든 칼럼이 소진되었습니다!")
