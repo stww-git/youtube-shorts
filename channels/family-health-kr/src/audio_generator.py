@@ -345,23 +345,13 @@ class AudioGenerator:
                 print(f"   ✅ 병합 후 분할 완료 (silence_len={config['min_silence_len']}ms, thresh={config['silence_thresh']}dB)")
                 break
         
-        # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)
-        # 분할 개수가 맞지 않으면 비율로 강제 분할 (Fallback)
+        # 분할 개수가 맞지 않으면 오류 발생 및 종료
         if len(chunks) != expected_chunks:
-            print(f"   ⚠️  Silence 분할 결과({len(chunks)}개)가 예상({expected_chunks}개)과 다름")
-            
-            # [수정] 대본 상의 Duration은 부정확하므로, 텍스트 길이(글자수)를 최우선 기준으로 삼음
-            if text_lengths and len(text_lengths) == expected_chunks:
-                print(f"   📐 텍스트 길이 비율로 분할합니다 (우선순위 높음)")
-                chunks = self._split_proportional(audio, text_lengths)
-            
-            elif expected_durations and len(expected_durations) == expected_chunks:
-                print(f"   📐 예상 시간(Duration) 비율로 분할합니다 (Fallback)")
-                chunks = self._split_proportional(audio, expected_durations)
-                
-            else:
-                print(f"   📐 균등 분할로 대체합니다 (정보 부족)")
-                chunks = self._split_evenly(audio, expected_chunks)
+            error_msg = f"❌ 오디오 분할 실패! 예상: {expected_chunks}개, 결과: {len(chunks)}개"
+            print(f"\n   {error_msg}")
+            print(f"   💡 원인: TTS 음성에서 충분한 무음 구간이 감지되지 않았습니다.")
+            print(f"   💡 해결책: 프롬프트에서 [medium pause] 개수를 늘리거나, SILENCE_CONFIGS를 조정하세요.")
+            raise Exception(error_msg)
         
         # 각 chunk 저장
         audio_paths = []
