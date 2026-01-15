@@ -195,10 +195,10 @@ class AudioGenerator:
                     pass
         
         # 1. 전체 텍스트 조합
-        # [수정] 사용자가 구체적으로 요청한 [medium pause] (표준 일시중지, 500ms) 적용
-        # 문장 구분에 가장 효과적임
-        texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ' [medium pause] '.join(texts)
+        # [수정] [long pause] 불안정성 해결 -> [medium pause] 2개 연속 사용
+        # 약 1초 정도의 확실한 무음 구간 생성
+        texts = [scene['audio_text'].strip().replace(',', '').replace('.', '') for scene in scenes]
+        full_text = ' [medium pause] [medium pause] '.join(texts)
         # full_text = f"<speak>{inner_text}</speak>"  # SSML Wrapper 제거
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")

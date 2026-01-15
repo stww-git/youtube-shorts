@@ -142,6 +142,11 @@ class MotionEffectsComposer:
                 if text and clip:
                     clip = self._add_subtitle(clip, text, duration)
                 
+                # === Medical Disclaimer (Last Scene Only) ===
+                if idx == len(scenes):
+                    print(f"      🏥 의료 면책 조항 추가 (하단, {duration}초)")
+                    clip = self._add_medical_disclaimer(clip, duration)
+                
                 if clip:
                     # Ensure exact duration
                     clip = self._set_exact_duration(clip, duration)
@@ -745,6 +750,93 @@ class MotionEffectsComposer:
             logger.error(f"Failed to create subtitle image: {e}")
             return None
 
+    def _add_medical_disclaimer(self, clip, duration):
+        """
+        Adds a medical disclaimer overlay to the bottom of the clip using Pillow.
+        Text: Multi-line health message
+        Args:
+            clip: Video clip to overlay on
+            duration: Duration in seconds for the disclaimer to appear
+        """
+        try:
+            text = "주기적인 건강검진은 필요해요\n여러분의 건강을 진심으로 응원합니다"
+            font_size = 42
+            text_color = "white"
+            stroke_color = "black"
+            stroke_width = 3
+            line_spacing = 10  # 줄 간격
+            
+            # Load font - 면책 조항 전용 폰트 (NanumSquareB)
+            from pathlib import Path
+            disclaimer_font_path = Path(__file__).parent.parent / "fonts" / "nanumsquare" / "NanumSquareB.ttf"
+            try:
+                font = ImageFont.truetype(str(disclaimer_font_path), font_size)
+            except:
+                # Fallback to self.font
+                try:
+                    font = ImageFont.truetype(self.font, font_size)
+                except:
+                    font = ImageFont.load_default()
+            
+            # Calculate text size (Multi-line)
+            dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            # textbbox supports multiline by default in newer Pillow versions
+            bbox = dummy_draw.textbbox((0, 0), text, font=font, spacing=line_spacing, align='center')
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Create image with padding
+            padding = 20
+            img_width = int(text_width + padding * 2 + stroke_width * 2)
+            img_height = int(text_height + padding * 2 + stroke_width * 2)
+            
+            img = Image.new('RGBA', (img_width, img_height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            
+            # Draw text with stroke (Multi-line)
+            # Center the text
+            x = (img_width - text_width) / 2
+            y = padding + stroke_width
+            
+            # Stroke
+            for dx in range(-stroke_width, stroke_width + 1):
+                for dy in range(-stroke_width, stroke_width + 1):
+                    if dx*dx + dy*dy > stroke_width*stroke_width + 1: continue
+                    draw.multiline_text((x+dx, y+dy), text, font=font, fill=stroke_color, spacing=line_spacing, align='center')
+            
+            # Main text
+            draw.multiline_text((x, y), text, font=font, fill=text_color, spacing=line_spacing, align='center')
+            
+            # Save to temp file
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:
+                img.save(tf.name)
+                temp_path = tf.name
+            
+            print(f"      🏥 면책 조항 이미지 생성: {temp_path}")
+            print(f"      🏥 이미지 크기: {img_width}x{img_height}, Duration: {duration}초")
+            
+            # Create ImageClip with explicit duration
+            txt_clip = ImageClip(temp_path).with_duration(duration)
+            
+            # Position at bottom (Raised higher to avoid Shorts UI)
+            # VIDEO_HEIGHT - 600 preserves space for title/channel name
+            txt_clip = txt_clip.with_position(('center', VIDEO_HEIGHT - 600))
+            
+            print(f"      🏥 면책 조항 위치: center, {VIDEO_HEIGHT - 600}")
+            
+            # Use explicit size to ensure proper compositing
+            result = CompositeVideoClip([clip, txt_clip], size=(VIDEO_WIDTH, VIDEO_HEIGHT))
+            print(f"      🏥 면책 조항 합성 완료!")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to add medical disclaimer: {e}")
+            print(f"      ❌ 면책 조항 추가 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return clip
+
     def _add_subtitle(self, clip, text: str, duration: float):
         """Adds a subtitle overlay to a clip using Pillow for rendering."""
         from config.subtitle_config import (
@@ -823,7 +915,9 @@ class MotionEffectsComposer:
                      seg_duration = max(0.2, seg_duration)
 
                 # Create image using Pillow (Partial Coloring Logic Inside)
-                img_path = self._create_subtitle_image(sentence, style)
+                # [수정] 자막 렌더링 시 쉼표/마침표 제거 (화면에 안 보이게)
+                clean_sentence = sentence.replace(',', '').replace('.', '').strip()
+                img_path = self._create_subtitle_image(clean_sentence, style)
                 
                 if img_path and os.path.exists(img_path):
                     txt_clip = ImageClip(img_path)

@@ -118,6 +118,10 @@ class HealthColumnCrawler:
                     if attempt == MAX_RETRIES:
                         logger.error(f"목록 크롤링 실패: {e}")
                         print(f"   ❌ 크롤링 실패: {e}")
+                        
+                        # 첫 페이지에서 모든 재시도 실패 시 예외 발생 (네트워크 문제로 판단)
+                        if offset == 0:
+                            raise Exception(f"네트워크 연결 실패! 인터넷 연결을 확인해주세요. (원인: {e})")
             
             offset += 10
             if offset > 60:  # 최대 7페이지

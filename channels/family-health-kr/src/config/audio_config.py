@@ -6,6 +6,8 @@ TTS_VOICE_NAME = "Kore"  # Gemini TTS 음성
 # silence_thresh: 무음 판단 데시벨 임계값 (dV)
 # keep_silence: 분할 후 남길 무음 길이 (ms)
 SILENCE_CONFIGS = [
+    # 0단계: 아주 긴 무음 (long pause 대응)
+    {"min_silence_len": 800, "silence_thresh": -30, "keep_silence": 250},
     # 1단계: 길고 명확한 무음 기준
     {"min_silence_len": 700, "silence_thresh": -30, "keep_silence": 200},
     # 2단계: 중간-긴 무음
