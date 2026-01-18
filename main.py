@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "family-health-kr"
+ACTIVE_CHANNEL = "sokpyeonhan"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -57,6 +57,10 @@ CHANNELS = {
         "parallel": False,        # True: 이미지 병렬 생성
         "allow_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
         "summary_card": False,    # True: 영상 끝에 핵심 정보 카드 추가
+        "disclaimer": False,      # True: 면책 조항 추가
+        "bgm_enabled": True,     # True: 배경음악 사용
+        "bgm_volume": 0.05,       # 배경음악 볼륨
+        "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
     },
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
@@ -66,6 +70,10 @@ CHANNELS = {
         "parallel": False,
         "allow_fallback": False,  # False: 실패 시 바로 종료
         "summary_card": False,    # True: 영상 끝에 핵심 정보 카드 추가
+        "disclaimer": False,      # True: 면책 조항 추가
+        "bgm_enabled": False,     # True: 배경음악 사용
+        "bgm_volume": 0.05,       # 배경음악 볼륨
+        "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
     },
     "family-health-kr": {
         "enabled": False,          # True: 스케줄 실행
@@ -75,6 +83,10 @@ CHANNELS = {
         "parallel": False,        # True: 이미지 병렬 생성
         "allow_fallback": False,  # False: 실패 시 바로 종료
         "summary_card": True,     # True: 영상 끝에 핵심 정보 카드 추가
+        "disclaimer": False,       # True: 영상 끝에 면책 조항 추가
+        "bgm_enabled": True,      # True: 배경음악 사용
+        "bgm_volume": 0.05,        # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
+        "bgm_file": "cooking.mp3",  # assets/bgm/ 폴더 내 파일명
     },
     # 새 채널 추가 시 아래 형식으로 추가됩니다:
     # "channel-id": {
@@ -121,6 +133,10 @@ def main():
     allow_fallback = channel_settings.get("allow_fallback", False)
     privacy_status = channel_settings.get("privacy", "private")  # main.py의 privacy 설정 사용
     include_summary_card = channel_settings.get("summary_card", False)  # 핵심 정보 카드 추가 여부
+    include_disclaimer = channel_settings.get("disclaimer", False)  # 면책 조항 추가 여부
+    bgm_enabled = channel_settings.get("bgm_enabled", False)  # 배경음악 사용 여부
+    bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
+    bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -163,7 +179,11 @@ def main():
                 channel_id=channel_id,
                 allow_fallback=allow_fallback,
                 privacy_status=privacy_status,
-                include_summary_card=include_summary_card
+                include_summary_card=include_summary_card,
+                include_disclaimer=include_disclaimer,
+                bgm_enabled=bgm_enabled,
+                bgm_volume=bgm_volume,
+                bgm_file=bgm_file
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(

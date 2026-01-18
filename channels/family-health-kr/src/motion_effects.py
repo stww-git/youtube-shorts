@@ -1,7 +1,9 @@
 import os
 import logging
 import tempfile
+from pathlib import Path
 from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ImageClip, ColorClip
+from moviepy.audio.AudioClip import concatenate_audioclips, CompositeAudioClip
 from typing import List, Dict
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -31,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, include_disclaimer: bool = True, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -143,8 +145,8 @@ class MotionEffectsComposer:
                 if text and clip:
                     clip = self._add_subtitle(clip, text, duration)
                 
-                # === Medical Disclaimer (Last Scene Only) ===
-                if idx == len(scenes):
+                # === Medical Disclaimer (Last Scene Only, if enabled) ===
+                if idx == len(scenes) and include_disclaimer:
                     print(f"      🏥 의료 면책 조항 추가 (하단, {duration}초)")
                     clip = self._add_medical_disclaimer(clip, duration)
                 
@@ -288,6 +290,41 @@ class MotionEffectsComposer:
                     full_audio = self._set_exact_duration(full_audio, video_duration, is_audio=True)
                 
                 final_video = self._add_audio_to_clip(final_video, full_audio)
+
+            # === BGM Overlay ===
+            if bgm_enabled and bgm_file:
+                print(f"\n   🎵 [배경음악 추가]")
+                bgm_path = Path(__file__).parent.parent.parent.parent / "assets" / "bgm" / bgm_file
+                if bgm_path.exists():
+                    try:
+                        bgm_audio = AudioFileClip(str(bgm_path))
+                        video_duration = final_video.duration
+                        
+                        # Loop BGM if shorter than video
+                        if bgm_audio.duration < video_duration:
+                            loop_count = int(video_duration / bgm_audio.duration) + 1
+                            bgm_audio = concatenate_audioclips([bgm_audio] * loop_count)
+                            print(f"      🔁 BGM 루프: {loop_count}회 반복")
+                        
+                        # Trim to video length
+                        bgm_audio = bgm_audio.subclipped(0, video_duration)
+                        
+                        # Adjust volume
+                        bgm_audio = bgm_audio.with_volume_scaled(bgm_volume)
+                        print(f"      🔊 볼륨: {bgm_volume * 100:.0f}%")
+                        
+                        # Mix with existing audio
+                        if final_video.audio:
+                            mixed_audio = CompositeAudioClip([final_video.audio, bgm_audio])
+                            final_video = final_video.with_audio(mixed_audio)
+                        else:
+                            final_video = final_video.with_audio(bgm_audio)
+                        
+                        print(f"      ✅ 배경음악 추가 완료: {bgm_file}")
+                    except Exception as e:
+                        print(f"      ⚠️ BGM 추가 실패: {e}")
+                else:
+                    print(f"      ⚠️ BGM 파일을 찾을 수 없습니다: {bgm_path}")
 
             logger.info(f"Writing video to {output_path}")
             print(f"\n   🎬 [영상 렌더링 중] 이 작업은 시간이 걸릴 수 있습니다...\n")

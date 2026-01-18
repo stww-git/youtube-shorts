@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
         """
         Execute the video generation pipeline.
         
@@ -246,7 +246,7 @@ class RecipeVideoPipeline:
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
         
         if not result:
             print_error("영상 합성 실패!")

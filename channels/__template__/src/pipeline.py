@@ -37,7 +37,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
         """
         Execute the video generation pipeline.
         
@@ -237,15 +237,35 @@ class RecipeVideoPipeline:
         # Generate summary checklist if enabled
         summary_checklist = None
         if include_summary_card:
-            # For recipe channel, use formatted steps as content
-            recipe_content = format_steps(recipe.get('steps', []))
-            if recipe_content:
-                summary_checklist = self.script_gen.generate_summary(recipe_content)
+            # Construct full recipe content for better summary
+            steps_text = format_steps(recipe.get('steps', []))
+            # Handle ingredients as list of dicts: [{"name": "계란", "amount": "3개"}, ...]
+            ingredients_list = recipe.get('ingredients', [])
+            if ingredients_list and isinstance(ingredients_list[0], dict):
+                ingredients_text = ", ".join([f"{i.get('name', '')} {i.get('amount', '')}".strip() for i in ingredients_list])
+            elif isinstance(ingredients_list, list):
+                ingredients_text = ", ".join(ingredients_list)
+            else:
+                ingredients_text = str(ingredients_list)
+            
+            full_content = f"""
+[요리 제목] {recipe.get('title', '')}
+
+[재료 목록]
+{ingredients_text}
+
+[조리 순서]
+{steps_text}
+"""
+            if recipe.get('tips'):
+                full_content += f"\n[요리 팁]\n{recipe['tips']}"
+
+            summary_checklist = self.script_gen.generate_summary(full_content)
         
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
         
         if not result:
             print_error("영상 합성 실패!")
