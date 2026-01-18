@@ -30,14 +30,14 @@ def format_ingredients(ingredients: list, max_count: int = 10) -> str:
     return "\n".join(formatted)
 
 
-def format_steps(steps: list, max_count: int = 8, max_chars: int = 100) -> str:
+def format_steps(steps: list, max_count: int = None, max_chars: int = None) -> str:
     """
     조리 단계를 문자열로 포맷팅
     
     Args:
         steps: 조리 단계 목록 [{"step": 1, "description": "..."}, ...]
-        max_count: 최대 단계 개수 (기본값: 8)
-        max_chars: 각 단계 최대 문자 수 (기본값: 100)
+        max_count: 최대 단계 개수 (None이면 제한 없음)
+        max_chars: 각 단계 최대 문자 수 (None이면 제한 없음)
     
     Returns:
         포맷팅된 조리 단계 문자열
@@ -46,11 +46,13 @@ def format_steps(steps: list, max_count: int = 8, max_chars: int = 100) -> str:
         return "조리 단계 정보 없음"
     
     formatted = []
-    for step in steps[:max_count]:
+    steps_to_use = steps[:max_count] if max_count else steps
+    for step in steps_to_use:
         step_num = step.get('step', '')
         desc = step.get('description', '')
         if desc:
-            formatted.append(f"{step_num}. {desc[:max_chars]}")
+            text = desc[:max_chars] if max_chars else desc
+            formatted.append(f"{step_num}. {text}")
     return "\n".join(formatted)
 
 

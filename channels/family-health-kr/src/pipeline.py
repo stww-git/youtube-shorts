@@ -18,6 +18,7 @@ from core.utils import (
 from core.channel_manager import (
     get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token, get_output_dir
 )
+from core.prompt_logger import reset_prompt_logger, get_prompt_logger
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,16 @@ class RecipeVideoPipeline:
         print(f"   🏥 출처: {column.get('source', '알 수 없음')}")
         print(f"   👨‍⚕️ 집필자: {column.get('author', '알 수 없음')}")
         
+        # Initialize prompt debug logger
+        debug_logger = reset_prompt_logger()
+        debug_logger.log_raw_data({
+            "article_id": column.get('article_id', ''),
+            "title": original_title,
+            "source": column.get('source', ''),
+            "author": column.get('author', ''),
+            "content": column.get('content', ''),
+        }, data_type="건강 칼럼")
+        
         # ==========================================
         # Step 2: Script Generation (대본 먼저 생성)
         # ==========================================
@@ -123,6 +134,9 @@ class RecipeVideoPipeline:
         channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
         output_dir = create_output_folder(video_title, base_output_dir=channel_output_base)
         print(f"   📁 출력 폴더 생성: {output_dir}")
+        
+        # Set output dir for prompt debug logger
+        debug_logger.set_output_dir(output_dir)
         
         # Save title and script to file
         script_file = os.path.join(output_dir, "script.txt")
@@ -246,6 +260,10 @@ class RecipeVideoPipeline:
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
+        
+        # Save prompt debug log before rendering
+        debug_logger.save()
+        
         result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
         
         if not result:

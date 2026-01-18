@@ -18,6 +18,7 @@ from core.utils import (
 from core.channel_manager import (
     get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token, get_output_dir
 )
+from core.prompt_logger import reset_prompt_logger, get_prompt_logger
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,15 @@ class RecipeVideoPipeline:
         print(f"   📦 재료: {len(recipe.get('ingredients', []))}개")
         print(f"   📋 조리단계: {len(recipe.get('steps', []))}개")
         
+        # Initialize prompt debug logger
+        debug_logger = reset_prompt_logger()
+        debug_logger.log_raw_data({
+            "recipe_id": recipe.get('recipe_id', ''),
+            "title": original_title,
+            "ingredients": recipe.get('ingredients', []),
+            "steps": recipe.get('steps', []),
+        }, data_type="레시피")
+        
         # ==========================================
         # Step 2: Script Generation (대본 먼저 생성)
         # ==========================================
@@ -108,6 +118,14 @@ class RecipeVideoPipeline:
         for scene in scenes:
             print(f"      Scene {scene['scene_id']}: {scene['audio_text'][:40]}... ({scene.get('duration', 3)}s)")
         print("")
+        
+        # Log script generation - actual input to prompt
+        # Script prompt uses: title + format_steps(steps)
+        actual_steps_text = format_steps(recipe.get('steps', []))
+        raw_steps_json = json.dumps(recipe.get('steps', []), ensure_ascii=False, indent=2)
+        script_input = f"[title]\n{original_title}\n\n[steps - 원본 (JSON)]\n{raw_steps_json}\n\n[steps - 프롬프트에 전달된 값 (format_steps 결과)]\n{actual_steps_text}"
+        script_output = json.dumps(script_data, ensure_ascii=False, indent=2)
+        debug_logger.log_prompt_step(2, "대본 생성", script_input, "(SCRIPT_GENERATION_PROMPT 사용 - title, steps 변수 전달)", script_output, "SCRIPT_GENERATION_PROMPT")
 
         # ==========================================
         # Step 3: Generate Video Title (대본 기반)
@@ -117,10 +135,20 @@ class RecipeVideoPipeline:
         video_title = self.title_gen.generate_title(recipe, scenes)
         print(f"\n   📌 생성된 제목: {video_title}")
         
+        # Log title generation - actual input to prompt
+        # Title prompt uses: title + script_content (from scenes)
+        script_lines = [f"{scene['scene_id']}번: {scene['audio_text']}" for scene in scenes]
+        script_content = "\n".join(script_lines)
+        title_input = f"[title]\n{original_title}\n\n[script_content]\n{script_content}"
+        debug_logger.log_prompt_step(3, "제목 생성", title_input, "(TITLE_GENERATION_PROMPT 사용 - title, script_content 변수 전달)", video_title, "TITLE_GENERATION_PROMPT")
+        
         # Create output folder (채널별 출력 경로 사용)
         channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
         output_dir = create_output_folder(video_title, base_output_dir=channel_output_base)
         print(f"   📁 출력 폴더 생성: {output_dir}")
+        
+        # Set output dir for prompt debug logger
+        debug_logger.set_output_dir(output_dir)
         
         # Save title and script to file
         script_file = os.path.join(output_dir, "script.txt")
@@ -262,10 +290,18 @@ class RecipeVideoPipeline:
                 full_content += f"\n[요리 팁]\n{recipe['tips']}"
 
             summary_checklist = self.script_gen.generate_summary(full_content)
+            
+            # Log summary card generation
+            if summary_checklist:
+                debug_logger.log_prompt_step(6, "핵심 정보 카드 생성", full_content, "(SUMMARY_GENERATION_PROMPT 사용)", str(summary_checklist), "SUMMARY_GENERATION_PROMPT")
         
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
         final_output = os.path.join(output_dir, f"{safe_video_title}.mp4")
+        
+        # Save prompt debug log before rendering
+        debug_logger.save()
+        
         result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
         
         if not result:
