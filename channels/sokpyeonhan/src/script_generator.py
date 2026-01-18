@@ -101,18 +101,20 @@ class RecipeScriptGenerator:
                     print(f"{'❌'*25}\n")
                     return None
 
-    def generate_summary(self, article_content: str) -> list:
+    def generate_summary(self, article_content: str, kick: str = "") -> list:
         """
         레시피에서 핵심 체크리스트를 추출합니다.
         
         Args:
             article_content: 레시피 정보 (조리 단계 등)
+            kick: 대본 Scene 8에서 강조한 핵심 비법
             
         Returns:
             체크리스트 문자열 리스트 (예: ["• 간장 2큰술", ...])
         """
         prompt = SUMMARY_GENERATION_PROMPT.format(
-            article_content=article_content[:3000]  # 토큰 제한
+            article_content=article_content[:3000],  # 토큰 제한
+            kick=kick if kick else "레시피의 핵심 포인트를 찾아주세요"
         )
         
         for attempt in range(1, MAX_RETRIES + 1):

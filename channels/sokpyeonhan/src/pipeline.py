@@ -226,6 +226,14 @@ class RecipeVideoPipeline:
                     print(f"      Scene {scene['scene_id']}: {scene.get('visual_description', '')[:50]}...")
                 print("")
                 
+                # Log image prompt generation
+                script_text_for_log = "\n".join([f"Scene {s['scene_id']}: {s['audio_text']}" for s in scenes])
+                image_prompt_input = f"[title]\n{video_title}\n\n[script_text]\n{script_text_for_log}"
+                image_prompt_output = f"[global_visual_style]\n{global_visual_style}\n\n[scenes]\n" + "\n".join([
+                    f"Scene {s['scene_id']}: {s.get('visual_description', '')}" for s in scenes
+                ])
+                debug_logger.log_prompt_step(4, "이미지 프롬프트 생성", image_prompt_input, "(IMAGE_GENERATION_PROMPT 사용)", image_prompt_output, "IMAGE_GENERATION_PROMPT")
+                
             except Exception as e:
                 print_error(f"Failed to parse image prompts JSON: {e}")
                 print(image_prompts_json)
@@ -289,7 +297,14 @@ class RecipeVideoPipeline:
             if recipe.get('tips'):
                 full_content += f"\n[요리 팁]\n{recipe['tips']}"
 
-            summary_checklist = self.script_gen.generate_summary(full_content)
+            # Extract Kick (Scene 8's audio_text) for summary card alignment
+            kick = ""
+            for scene in scenes:
+                if scene.get('scene_id') == 8:
+                    kick = scene.get('audio_text', '')
+                    break
+            
+            summary_checklist = self.script_gen.generate_summary(full_content, kick=kick)
             
             # Log summary card generation
             if summary_checklist:
