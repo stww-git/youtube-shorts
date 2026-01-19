@@ -195,10 +195,10 @@ class AudioGenerator:
                     pass
         
         # 1. 전체 텍스트 조합
-        # [수정] 사용자가 구체적으로 요청한 [medium pause] (표준 일시중지, 500ms) 적용
-        # 문장 구분에 가장 효과적임
+        # [수정] 사용자가 구체적으로 요청한 [medium pause][medium pause] (표준 일시중지 2회) 적용
+        # 문장 구분에 가장 효과적임 (Silence 감지 용이)
         texts = [scene['audio_text'].strip() for scene in scenes]
-        full_text = ' [medium pause] '.join(texts)
+        full_text = ' [medium pause] [medium pause] '.join(texts)
         # full_text = f"<speak>{inner_text}</speak>"  # SSML Wrapper 제거
         
         print(f"\n   🎤 [통합 오디오 생성 시작]")
@@ -337,10 +337,12 @@ class AudioGenerator:
                   f"thresh={config['silence_thresh']}dB → {len(chunks)}개 분할")
             
             if len(chunks) == expected_chunks:
+                print(f"   ✅ 성공! silence_len={config['min_silence_len']}ms, thresh={config['silence_thresh']}dB 사용")
                 break
             elif len(chunks) > expected_chunks:
                 # 너무 많이 분할됨 → 인접 chunk 병합
                 chunks = self._merge_chunks(chunks, expected_chunks)
+                print(f"   ✅ 병합 후 성공! silence_len={config['min_silence_len']}ms (병합: {len(chunks)}개)")
                 break
         
         # 분할 개수가 맞지 않으면 오류 발생 및 종료

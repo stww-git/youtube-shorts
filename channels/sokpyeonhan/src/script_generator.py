@@ -15,8 +15,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
+from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, KICK_ANALYSIS_PROMPT
 from core.utils import format_ingredients, format_steps
+import re
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +45,75 @@ class RecipeScriptGenerator:
         """Return total API calls made."""
         return self.api_call_count
 
-    def generate_script(self, recipe: dict) -> str:
+    def analyze_kick(self, recipe: dict, min_confidence: int = 5) -> dict:
         """
-        레시피를 바탕으로 8줄 구조의 대본을 생성합니다.
+        레시피에 Kick(핵심 비법)이 있는지 분석합니다.
+        
+        Args:
+            recipe: 레시피 딕셔너리
+            min_confidence: 최소 신뢰도 (이 이하면 Kick 없음으로 판단)
+            
+        Returns:
+            {
+                "has_kick": bool,
+                "confidence": int,
+                "kick_candidate": str,
+                "reason": str
+            }
+        """
+        title = recipe.get('title', '요리')
+        steps = format_steps(recipe.get('steps', []))
+        
+        prompt = KICK_ANALYSIS_PROMPT.format(
+            title=title,
+            steps=steps
+        )
+        
+        try:
+            print(f"\n   🔍 [Kick 분석 중] {title}")
+            self._increment_api_call("Kick Analysis")
+            
+            response = self.client.models.generate_content(
+                model=TEXT_MODEL,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.3  # 분석용이므로 낮은 temperature
+                )
+            )
+            
+            result_text = response.text
+            
+            # JSON 추출
+            json_match = re.search(r'\{[\s\S]*\}', result_text)
+            if json_match:
+                result = json.loads(json_match.group(0))
+                
+                # confidence 기반으로 has_kick 재조정
+                confidence = result.get("confidence", 0)
+                if confidence <= min_confidence:
+                    result["has_kick"] = False
+                
+                print(f"      Kick: {result.get('kick_candidate', 'N/A')}")
+                print(f"      신뢰도: {confidence}/10")
+                print(f"      판단: {'✅ 사용 가능' if result.get('has_kick') else '❌ 스킵'}")
+                print(f"      이유: {result.get('reason', '')}")
+                
+                return result
+            else:
+                print(f"      ⚠️ JSON 파싱 실패")
+                return {"has_kick": True, "confidence": 5, "kick_candidate": "", "reason": "파싱 실패, 기본값 사용"}
+                
+        except Exception as e:
+            print(f"      ⚠️ Kick 분석 실패: {e}")
+            return {"has_kick": True, "confidence": 5, "kick_candidate": "", "reason": f"분석 실패: {e}"}
+
+    def generate_script(self, recipe: dict, kick: str = "") -> str:
+        """
+        레시피를 바탕으로 7줄 구조의 대본을 생성합니다.
         
         Args:
             recipe: 레시피 딕셔너리 {title, ingredients, steps, ...}
+            kick: 이미 분석된 Kick (핵심 비법). 제공되면 재분석하지 않음.
             
         Returns:
             JSON 형식의 대본 문자열 (실패 시 None)
@@ -58,7 +123,8 @@ class RecipeScriptGenerator:
         
         prompt = SCRIPT_GENERATION_PROMPT.format(
             title=title,
-            steps=steps
+            steps=steps,
+            kick=kick if kick else "(분석된 Kick 없음 - 직접 찾아서 사용)"
         )
         
         for attempt in range(1, MAX_RETRIES + 1):
@@ -107,7 +173,7 @@ class RecipeScriptGenerator:
         
         Args:
             article_content: 레시피 정보 (조리 단계 등)
-            kick: 대본 Scene 8에서 강조한 핵심 비법
+            kick: 대본 Scene 7에서 강조한 핵심 비법
             
         Returns:
             체크리스트 문자열 리스트 (예: ["• 간장 2큰술", ...])

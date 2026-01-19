@@ -58,19 +58,48 @@ class RecipeVideoPipeline:
         # ==========================================
         # Step 1: Get Recipe from 10000recipe.com
         # ==========================================
-        print_step(1, 6, "레시피 선택", "🍲 10000recipe.com 크롤링 중")
+        print_step(1, 7, "레시피 선택", "🍲 10000recipe.com 크롤링 중")
         
-        recipe = self.crawler.get_next_recipe()
+        # Kick이 있는 레시피를 찾을 때까지 반복
+        MAX_RECIPE_ATTEMPTS = 5  # 최대 5개 레시피 시도
+        recipe = None
+        kick_analysis = None
         
-        if not recipe:
-            print_error("사용 가능한 레시피가 없습니다.")
-            raise Exception("사용 가능한 레시피가 없습니다.")
-        
-        original_title = recipe.get('title', '요리 레시피')
-        print_success(f"레시피 선택 완료!")
-        print(f"\n   📌 원본 레시피: {original_title}")
-        print(f"   📦 재료: {len(recipe.get('ingredients', []))}개")
-        print(f"   📋 조리단계: {len(recipe.get('steps', []))}개")
+        for attempt in range(1, MAX_RECIPE_ATTEMPTS + 1):
+            recipe = self.crawler.get_next_recipe()
+            
+            if not recipe:
+                print_error("사용 가능한 레시피가 없습니다.")
+                raise Exception("사용 가능한 레시피가 없습니다.")
+            
+            original_title = recipe.get('title', '요리 레시피')
+            print_success(f"레시피 선택 완료! (시도 {attempt}/{MAX_RECIPE_ATTEMPTS})")
+            print(f"\n   📌 원본 레시피: {original_title}")
+            print(f"   📦 재료: {len(recipe.get('ingredients', []))}개")
+            print(f"   📋 조리단계: {len(recipe.get('steps', []))}개")
+            
+            # ==========================================
+            # Step 2: Kick 분석 (신뢰도 체크)
+            # ==========================================
+            print_step(2, 7, "Kick 분석", "🔍 핵심 비법 존재 여부 확인 중")
+            
+            kick_analysis = self.script_gen.analyze_kick(recipe, min_confidence=5)
+            
+            if kick_analysis.get("has_kick", True):
+                print_success(f"Kick 확인: {kick_analysis.get('kick_candidate', 'N/A')}")
+                break  # Kick 있으면 루프 탈출
+            else:
+                print_warning(f"이 레시피에는 명확한 Kick이 없습니다. 다음 레시피 시도...")
+                print_info(f"   이유: {kick_analysis.get('reason', 'N/A')}")
+                print_info(f"   신뢰도: {kick_analysis.get('confidence', 0)}/10")
+                # Mark recipe as used (skipped) - use correct method name
+                self.crawler.mark_as_used(
+                    recipe_id=recipe.get('recipe_id', ''),
+                    title=original_title,
+                    category="skipped"
+                )
+                if attempt == MAX_RECIPE_ATTEMPTS:
+                    raise Exception(f"{MAX_RECIPE_ATTEMPTS}개 레시피 모두 Kick 부재로 스킵됨")
         
         # Initialize prompt debug logger
         debug_logger = reset_prompt_logger()
@@ -81,12 +110,19 @@ class RecipeVideoPipeline:
             "steps": recipe.get('steps', []),
         }, data_type="레시피")
         
-        # ==========================================
-        # Step 2: Script Generation (대본 먼저 생성)
-        # ==========================================
-        print_step(2, 6, "대본 생성", "✍️ Gemini AI 작성 중")
+        # Log Kick analysis
+        debug_logger.log_raw_data({
+            "kick_analysis": kick_analysis
+        }, data_type="Kick 분석")
         
-        script_json = self.script_gen.generate_script(recipe)
+        # ==========================================
+        # Step 3: Script Generation (대본 생성)
+        # ==========================================
+        print_step(3, 7, "대본 생성", "✍️ Gemini AI 작성 중")
+        
+        # Kick 분석 결과를 대본 생성에 전달
+        kick_candidate = kick_analysis.get("kick_candidate", "")
+        script_json = self.script_gen.generate_script(recipe, kick=kick_candidate)
         
         if not script_json:
             print_error("대본 생성 실패!")
@@ -125,12 +161,12 @@ class RecipeVideoPipeline:
         raw_steps_json = json.dumps(recipe.get('steps', []), ensure_ascii=False, indent=2)
         script_input = f"[title]\n{original_title}\n\n[steps - 원본 (JSON)]\n{raw_steps_json}\n\n[steps - 프롬프트에 전달된 값 (format_steps 결과)]\n{actual_steps_text}"
         script_output = json.dumps(script_data, ensure_ascii=False, indent=2)
-        debug_logger.log_prompt_step(2, "대본 생성", script_input, "(SCRIPT_GENERATION_PROMPT 사용 - title, steps 변수 전달)", script_output, "SCRIPT_GENERATION_PROMPT")
+        debug_logger.log_prompt_step(3, "대본 생성", script_input, "(SCRIPT_GENERATION_PROMPT 사용 - title, steps 변수 전달)", script_output, "SCRIPT_GENERATION_PROMPT")
 
         # ==========================================
-        # Step 3: Generate Video Title (대본 기반)
+        # Step 4: Generate Video Title (대본 기반)
         # ==========================================
-        print_step(3, 6, "제목 생성", "✨ 대본 기반 제목 생성 중")
+        print_step(4, 7, "제목 생성", "✨ 대본 기반 제목 생성 중")
         
         video_title = self.title_gen.generate_title(recipe, scenes)
         print(f"\n   📌 생성된 제목: {video_title}")
@@ -140,7 +176,7 @@ class RecipeVideoPipeline:
         script_lines = [f"{scene['scene_id']}번: {scene['audio_text']}" for scene in scenes]
         script_content = "\n".join(script_lines)
         title_input = f"[title]\n{original_title}\n\n[script_content]\n{script_content}"
-        debug_logger.log_prompt_step(3, "제목 생성", title_input, "(TITLE_GENERATION_PROMPT 사용 - title, script_content 변수 전달)", video_title, "TITLE_GENERATION_PROMPT")
+        debug_logger.log_prompt_step(4, "제목 생성", title_input, "(TITLE_GENERATION_PROMPT 사용 - title, script_content 변수 전달)", video_title, "TITLE_GENERATION_PROMPT")
         
         # Create output folder (채널별 출력 경로 사용)
         channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
@@ -160,9 +196,9 @@ class RecipeVideoPipeline:
         print(f"   📝 대본/제목 저장: script.txt")
 
         # ==========================================
-        # Step 4: Audio Generation (통합 생성 + Silence 분할)
+        # Step 5: Audio Generation (통합 생성 + Silence 분할)
         # ==========================================
-        print_step(4, 6, "나레이션 오디오 생성", "🎤 Gemini TTS 통합 생성 중")
+        print_step(5, 7, "나레이션 오디오 생성", "🎤 Gemini TTS 통합 생성 중")
         
         try:
             # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
@@ -177,9 +213,9 @@ class RecipeVideoPipeline:
             raise
 
         # ==========================================
-        # Step 5: Image Generation
+        # Step 6: Image Generation
         # ==========================================
-        print_step(5, 6, "이미지 생성", "🎨 Gemini + Imagen 생성 중")
+        print_step(6, 7, "이미지 생성", "🎨 Gemini + Imagen 생성 중")
         
         if test_mode:
             # Test Mode: Skip Prompt Generation & Imagen
@@ -232,7 +268,7 @@ class RecipeVideoPipeline:
                 image_prompt_output = f"[global_visual_style]\n{global_visual_style}\n\n[scenes]\n" + "\n".join([
                     f"Scene {s['scene_id']}: {s.get('visual_description', '')}" for s in scenes
                 ])
-                debug_logger.log_prompt_step(4, "이미지 프롬프트 생성", image_prompt_input, "(IMAGE_GENERATION_PROMPT 사용)", image_prompt_output, "IMAGE_GENERATION_PROMPT")
+                debug_logger.log_prompt_step(5, "이미지 프롬프트 생성", image_prompt_input, "(IMAGE_GENERATION_PROMPT 사용)", image_prompt_output, "IMAGE_GENERATION_PROMPT")
                 
             except Exception as e:
                 print_error(f"Failed to parse image prompts JSON: {e}")
@@ -266,9 +302,9 @@ class RecipeVideoPipeline:
                 print(f"      ❌ Scene {scene['scene_id']}: Failed")
             
         # ==========================================
-        # Step 6: Final Composition
+        # Step 7: Final Composition
         # ==========================================
-        print_step(6, 6, "최종 영상 합성", "🎞️ MoviePy 합성 중")
+        print_step(7, 7, "최종 영상 합성", "🎞️ MoviePy 합성 중")
         
         # Generate summary checklist if enabled
         summary_checklist = None
@@ -297,10 +333,10 @@ class RecipeVideoPipeline:
             if recipe.get('tips'):
                 full_content += f"\n[요리 팁]\n{recipe['tips']}"
 
-            # Extract Kick (Scene 8's audio_text) for summary card alignment
+            # Extract Kick (Scene 7's audio_text) for summary card alignment
             kick = ""
             for scene in scenes:
-                if scene.get('scene_id') == 8:
+                if scene.get('scene_id') == 7:
                     kick = scene.get('audio_text', '')
                     break
             
@@ -308,7 +344,7 @@ class RecipeVideoPipeline:
             
             # Log summary card generation
             if summary_checklist:
-                debug_logger.log_prompt_step(6, "핵심 정보 카드 생성", full_content, "(SUMMARY_GENERATION_PROMPT 사용)", str(summary_checklist), "SUMMARY_GENERATION_PROMPT")
+                debug_logger.log_prompt_step(7, "핵심 정보 카드 생성", full_content, "(SUMMARY_GENERATION_PROMPT 사용)", str(summary_checklist), "SUMMARY_GENERATION_PROMPT")
         
         # 파일명을 영상 제목과 동일하게 설정
         safe_video_title = sanitize_filename(video_title)
