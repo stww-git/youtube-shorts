@@ -49,3 +49,5 @@ htmlcov/
 .dmypy.json
 dmypy.json
 
+# 로컬 히스토리 파일 (환경 분리용)
+channels/*/history.local.json

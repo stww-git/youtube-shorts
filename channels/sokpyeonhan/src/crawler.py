@@ -32,9 +32,19 @@ CATEGORY_ORDER = [
 
 from pathlib import Path
 
-# 채널 폴더 내 히스토리 파일 (channels/{channel}/recipe_history.json)
+# 채널 폴더 내 히스토리 파일
+# - GitHub Actions (원격): history.json (Git 추적)
+# - 로컬 환경: history.local.json (Git 무시)
 CHANNEL_DIR = Path(__file__).parent.parent
-HISTORY_FILE = CHANNEL_DIR / "history.json"
+
+def _get_history_file():
+    """환경에 따라 히스토리 파일 경로 반환"""
+    if os.getenv('GITHUB_ACTIONS') == 'true':
+        return CHANNEL_DIR / "history.json"
+    else:
+        return CHANNEL_DIR / "history.local.json"
+
+HISTORY_FILE = _get_history_file()
 
 
 class RecipeCrawler:

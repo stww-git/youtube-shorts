@@ -22,7 +22,17 @@ MAX_RETRIES = 3
 RETRY_DELAY = 2
 
 # 히스토리 파일 경로
-HISTORY_FILE = Path(__file__).parent.parent / "history.json"
+# - GitHub Actions (원격): history.json (Git 추적)
+# - 로컬 환경: history.local.json (Git 무시)
+def _get_history_file():
+    """환경에 따라 히스토리 파일 경로 반환"""
+    channel_dir = Path(__file__).parent.parent
+    if os.getenv('GITHUB_ACTIONS') == 'true':
+        return channel_dir / "history.json"
+    else:
+        return channel_dir / "history.local.json"
+
+HISTORY_FILE = _get_history_file()
 
 
 class HealthColumnCrawler:
