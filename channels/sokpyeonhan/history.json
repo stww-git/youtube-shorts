@@ -363,7 +363,21 @@
       "category": "best",
       "url": "https://www.10000recipe.com/recipe/6870391",
       "used_at": "2026-01-28"
+    },
+    {
+      "recipe_id": "7070537",
+      "title": "스팸애호박 짜글이",
+      "category": "skipped",
+      "url": "https://www.10000recipe.com/recipe/7070537",
+      "used_at": "2026-01-28"
+    },
+    {
+      "recipe_id": "6905889",
+      "title": "잡채 만들 때 삶은 당면 절대 이렇게 버무리지 마세요",
+      "category": "best",
+      "url": "https://www.10000recipe.com/recipe/6905889",
+      "used_at": "2026-01-28"
     }
   ],
-  "last_updated": "2026-01-28T09:37:18.573240"
+  "last_updated": "2026-01-28T22:32:08.386148"
 }
