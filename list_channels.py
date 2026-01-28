@@ -46,14 +46,14 @@ def get_main_py_settings() -> dict:
         test_mode = re.search(r'"test_mode":\s*(True|False)', block)
         upload = re.search(r'"upload":\s*(True|False)', block)
         privacy = re.search(r'"privacy":\s*"([^"]+)"', block)
-        allow_fallback = re.search(r'"allow_fallback":\s*(True|False)', block)
+        tts_fallback = re.search(r'"tts_fallback":\s*(True|False)', block)
         
         settings[channel_id] = {
             'enabled': enabled.group(1) if enabled else 'N/A',
             'test_mode': test_mode.group(1) if test_mode else 'N/A',
             'upload': upload.group(1) if upload else 'N/A',
             'privacy': privacy.group(1) if privacy else 'N/A',
-            'allow_fallback': allow_fallback.group(1) if allow_fallback else 'N/A',
+            'tts_fallback': tts_fallback.group(1) if tts_fallback else 'N/A',
         }
     
     return settings
@@ -105,13 +105,13 @@ def display_channels():
         test_mode = ch_settings.get('test_mode', 'N/A')
         upload = ch_settings.get('upload', 'N/A')
         privacy = ch_settings.get('privacy', 'N/A')
-        allow_fallback = ch_settings.get('allow_fallback', 'False') # 기본값 False 간주
+        tts_fallback = ch_settings.get('tts_fallback', 'False') # 기본값 False 간주
         
         # 활성화 상태 표시 (아이콘 최소화)
         enabled_icon = "✅" if enabled == "True" else "❌"
         test_icon = "🧪" if test_mode == "True" else "🎬"
         upload_icon = "⬆️" if upload == "True" else "💾"
-        fallback_icon = "⭕" if allow_fallback == "True" else "❌"
+        fallback_icon = "⭕" if tts_fallback == "True" else "❌"
         
         # 스케줄
         sch = schedules.get(channel, {})

@@ -38,7 +38,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, allow_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
         """
         Execute the video generation pipeline.
         
@@ -47,7 +47,7 @@ class RecipeVideoPipeline:
             image_parallel: If True, generates images in parallel (faster). If False, sequential (safer).
             upload_to_youtube: If True, uploads the generated video to YouTube.
             channel_id: Target channel folder name (e.g., 'sokpyeonhan'). Use default if None.
-            allow_fallback: If True, uses fallback methods (e.g. gTTS) on failure. If False, raises exception.
+            tts_fallback: If True, uses fallback methods (e.g. gTTS) on failure. If False, raises exception.
             privacy_status: YouTube privacy status ('public', 'unlisted', 'private'). From main.py settings.
         """
         
@@ -202,7 +202,7 @@ class RecipeVideoPipeline:
         
         try:
             # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
-            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, allow_fallback=allow_fallback)
+            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, tts_fallback=tts_fallback)
         
             print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
             total_duration = sum(s['duration'] for s in scenes)
@@ -353,7 +353,7 @@ class RecipeVideoPipeline:
         # Save prompt debug log before rendering
         debug_logger.save()
         
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
         
         if not result:
             print_error("영상 합성 실패!")
@@ -428,6 +428,11 @@ class RecipeVideoPipeline:
                         original_title=recipe.get('title'),
                         url=recipe.get('url', '')
                     ) if description_template else ""
+                    
+                    # summary_checklist가 있고 summary_in_description이 True면 설명에 추가
+                    if summary_in_description and summary_checklist:
+                        checklist_text = "\n".join(summary_checklist)
+                        upload_description = f"{checklist_text}\n\n{upload_description}" if upload_description else checklist_text
                     
                     video_id = uploader.upload_video(
                         final_output, 

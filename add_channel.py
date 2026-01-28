@@ -293,7 +293,7 @@ def update_main_py(channel_id: str):
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
-        "allow_fallback": False,  # False: 실패 시 바로 종료
+        "tts_fallback": False,  # False: 실패 시 바로 종료
     }},'''
     
     # "# 새 채널 추가 시" 주석 찾아서 그 앞에 삽입

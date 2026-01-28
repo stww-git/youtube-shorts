@@ -169,7 +169,7 @@ class AudioGenerator:
                         
                         raise Exception(f"Gemini TTS failed after {MAX_RETRIES} retries: {error_str}")
 
-    def generate_speech_batch(self, scenes: list, output_dir: str, voice: str = None, allow_fallback: bool = False):
+    def generate_speech_batch(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False):
         """
         전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
         일관된 톤과 자연스러운 억양을 유지합니다.
@@ -178,7 +178,7 @@ class AudioGenerator:
             scenes: 장면 목록 [{"scene_id": 1, "audio_text": "...", "duration": 5}, ...]
             output_dir: 출력 디렉토리
             voice: 음성 설정 (기본: config에서)
-            allow_fallback: Fallback 허용 여부 (True: gTTS 사용, False: 실패 시 종료)
+            tts_fallback: Fallback 허용 여부 (True: gTTS 사용, False: 실패 시 종료)
         
         Returns:
             분할된 오디오 파일 경로 목록
@@ -245,7 +245,7 @@ class AudioGenerator:
                 if attempt >= MAX_RETRIES:
                     print(f"   ⚠️  Gemini TTS 실패: {e}")
                     
-                    if allow_fallback:
+                    if tts_fallback:
                         print(f"   🔄 gTTS (Google Translate TTS)로 대체합니다.")
                         try:
                             tts = gTTS(text=full_text, lang='ko')

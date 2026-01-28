@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from google import genai
 from google.genai import types
-from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
 from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, KICK_ANALYSIS_PROMPT
 from core.utils import format_ingredients, format_steps
 import re
@@ -158,6 +158,23 @@ class RecipeScriptGenerator:
                     time.sleep(RETRY_DELAY)
                     continue
                 else:
+                    # 기본 모델 모두 실패 시 fallback 모델로 시도
+                    if TEXT_FALLBACK_MODEL:
+                        print(f"\n   🔄 기본 모델 실패, fallback 모델({TEXT_FALLBACK_MODEL})로 재시도...")
+                        try:
+                            self._increment_api_call(f"Script Generation (Fallback: {TEXT_FALLBACK_MODEL})")
+                            response = self.client.models.generate_content(
+                                model=TEXT_FALLBACK_MODEL,
+                                contents=[prompt],
+                                config=types.GenerateContentConfig(
+                                    temperature=TEMPERATURE
+                                )
+                            )
+                            print(f"   ✅ Fallback 성공!")
+                            return response.text
+                        except Exception as fallback_e:
+                            print(f"   ❌ Fallback도 실패: {fallback_e}")
+                    
                     logger.error(f"Recipe script generation failed after {MAX_RETRIES} attempts: {e}")
                     print(f"\n{'❌'*25}")
                     print(f"  ❌ [치명적 에러] 대본 생성 실패")

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from google import genai
 from google.genai import types
-from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
 from prompts import TITLE_GENERATION_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -119,6 +119,34 @@ class RecipeTitleGenerator:
                     time.sleep(RETRY_DELAY)
                     continue
                 else:
+                    # 기본 모델 모두 실패 시 fallback 모델로 시도
+                    if TEXT_FALLBACK_MODEL:
+                        print(f"\n   🔄 기본 모델 실패, fallback 모델({TEXT_FALLBACK_MODEL})로 재시도...")
+                        try:
+                            self._increment_api_call(f"Title Generation (Fallback: {TEXT_FALLBACK_MODEL})")
+                            response = self.client.models.generate_content(
+                                model=TEXT_FALLBACK_MODEL,
+                                contents=[prompt],
+                                config=types.GenerateContentConfig(
+                                    temperature=TEMPERATURE,
+                                    max_output_tokens=1024,
+                                )
+                            )
+                            generated_title = response.text.strip()
+                            generated_title = generated_title.replace('**', '')
+                            generated_title = generated_title.strip('"\'')
+                            generated_title = generated_title.strip()
+                            if '\n' in generated_title:
+                                for line in generated_title.split('\n'):
+                                    line = line.strip()
+                                    if line and len(line) >= 5:
+                                        generated_title = line
+                                        break
+                            print(f"   ✅ Fallback 성공: {generated_title}")
+                            return generated_title
+                        except Exception as fallback_e:
+                            print(f"   ❌ Fallback도 실패: {fallback_e}")
+                    
                     logger.error(f"Title generation failed after {MAX_RETRIES} attempts: {e}")
                     print(f"\n   ⚠️ 제목 생성 실패, 원본 제목 사용: {original_title}")
                     return original_title

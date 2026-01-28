@@ -33,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, include_disclaimer: bool = True, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = True, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -170,7 +170,7 @@ class MotionEffectsComposer:
             
             # === Summary Card (핵심 정보 카드) ===
             if summary_checklist:
-                summary_card = self._create_summary_card(summary_checklist, duration=0.5)
+                summary_card = self._create_summary_card(summary_checklist, duration=summary_card_duration)
                 if summary_card:
                     final_video = concatenate_videoclips([final_video, summary_card], method="compose")
                     print(f"   ✅ 핵심 정보 카드 추가됨 (+0.5초)")

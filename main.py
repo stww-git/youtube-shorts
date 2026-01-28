@@ -55,8 +55,10 @@ CHANNELS = {
         "upload": True,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
-        "allow_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
+        "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
+        "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
         "disclaimer": False,      # True: 면책 조항 추가
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
@@ -68,8 +70,10 @@ CHANNELS = {
         "upload": False,          # True: 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,
-        "allow_fallback": False,  # False: 실패 시 바로 종료
+        "tts_fallback": False,  # False: 실패 시 바로 종료
         "summary_card": False,    # True: 영상 끝에 핵심 정보 카드 추가
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
+        "summary_in_description": False,  # True: 핵심 정보를 YouTube 설명에 포함
         "disclaimer": False,      # True: 면책 조항 추가
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.05,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
@@ -81,8 +85,10 @@ CHANNELS = {
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
-        "allow_fallback": False,  # False: 실패 시 바로 종료
+        "tts_fallback": False,  # False: 실패 시 바로 종료
         "summary_card": True,     # True: 영상 끝에 핵심 정보 카드 추가
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
+        "summary_in_description": False,  # True: 핵심 정보를 YouTube 설명에 포함
         "disclaimer": False,       # True: 영상 끝에 면책 조항 추가
         "bgm_enabled": True,      # True: 배경음악 사용
         "bgm_volume": 0.05,        # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
@@ -95,7 +101,7 @@ CHANNELS = {
     #     "upload": False,
     #     "privacy": "private",
     #     "parallel": False,
-    #     "allow_fallback": False,
+    #     "tts_fallback": False,
     # },
 }
 
@@ -130,9 +136,11 @@ def main():
     is_test_mode = args.test if args.test else channel_settings.get("test_mode", True)
     should_upload = args.upload if args.upload else channel_settings.get("upload", False)
     is_parallel = channel_settings.get("parallel", False)
-    allow_fallback = channel_settings.get("allow_fallback", False)
+    tts_fallback = channel_settings.get("tts_fallback", False)
     privacy_status = channel_settings.get("privacy", "private")  # main.py의 privacy 설정 사용
     include_summary_card = channel_settings.get("summary_card", False)  # 핵심 정보 카드 추가 여부
+    summary_card_duration = channel_settings.get("summary_card_duration", 3.0)  # 카드 노출 시간
+    summary_in_description = channel_settings.get("summary_in_description", False)  # 설명에 핵심 정보 포함
     include_disclaimer = channel_settings.get("disclaimer", False)  # 면책 조항 추가 여부
     bgm_enabled = channel_settings.get("bgm_enabled", False)  # 배경음악 사용 여부
     bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
@@ -177,9 +185,11 @@ def main():
                 image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
                 channel_id=channel_id,
-                allow_fallback=allow_fallback,
+                tts_fallback=tts_fallback,
                 privacy_status=privacy_status,
                 include_summary_card=include_summary_card,
+                summary_card_duration=summary_card_duration,
+                summary_in_description=summary_in_description,
                 include_disclaimer=include_disclaimer,
                 bgm_enabled=bgm_enabled,
                 bgm_volume=bgm_volume,
@@ -191,7 +201,7 @@ def main():
                 image_parallel=is_parallel,
                 upload_to_youtube=should_upload,
                 channel_id=channel_id,
-                allow_fallback=allow_fallback
+                tts_fallback=tts_fallback
             )
         else:
             print(f"   ❌ 채널 '{channel_id}'의 pipeline에 실행 가능한 함수가 없습니다.")
