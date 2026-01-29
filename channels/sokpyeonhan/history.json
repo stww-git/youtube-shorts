@@ -398,7 +398,21 @@
       "category": "best",
       "url": "https://www.10000recipe.com/recipe/6843373",
       "used_at": "2026-01-29"
+    },
+    {
+      "recipe_id": "6862341",
+      "title": "매생이 굴국 / 제철에 먹는 영양국",
+      "category": "skipped",
+      "url": "https://www.10000recipe.com/recipe/6862341",
+      "used_at": "2026-01-29"
+    },
+    {
+      "recipe_id": "6953648",
+      "title": "잡채 만들 때 당면 절대 이렇게 삶지 마세요",
+      "category": "best",
+      "url": "https://www.10000recipe.com/recipe/6953648",
+      "used_at": "2026-01-29"
     }
   ],
-  "last_updated": "2026-01-29T04:51:26.568733"
+  "last_updated": "2026-01-29T09:45:19.831635"
 }
