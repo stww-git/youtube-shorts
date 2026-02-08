@@ -755,7 +755,21 @@
       "category": "best",
       "url": "https://www.10000recipe.com/recipe/6869868",
       "used_at": "2026-02-07"
+    },
+    {
+      "recipe_id": "6910133",
+      "title": "매콤 돼지갈비찜",
+      "category": "skipped",
+      "url": "https://www.10000recipe.com/recipe/6910133",
+      "used_at": "2026-02-08"
+    },
+    {
+      "recipe_id": "6879201",
+      "title": "프렌치토스트 빵 적실 때 절대 이렇게 하지 마세요",
+      "category": "best",
+      "url": "https://www.10000recipe.com/recipe/6879201",
+      "used_at": "2026-02-08"
     }
   ],
-  "last_updated": "2026-02-07T22:36:20.845708"
+  "last_updated": "2026-02-08T05:14:41.707750"
 }
