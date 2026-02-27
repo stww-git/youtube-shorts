@@ -50,9 +50,9 @@ ACTIVE_CHANNEL = "sokpyeonhan"
 #    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
 CHANNELS = {
     "sokpyeonhan": {
-        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
