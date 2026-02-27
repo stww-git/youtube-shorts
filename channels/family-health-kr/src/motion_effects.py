@@ -908,48 +908,75 @@ class MotionEffectsComposer:
         try:
             print(f"\n   📋 [핵심 정보 카드 생성]")
             
-            # 텍스트 준비 (줄바꿈으로 연결)
-            # 긴 줄은 자동 줄바꿈 (최대 15자)
-            MAX_LINE_CHARS = 15
-            wrapped_lines = []
-            for item in checklist[:MAX_ITEMS]:
-                if len(item) > MAX_LINE_CHARS:
-                    # 공백 기준으로 줄바꿈
-                    words = item.split()
-                    current_line = ""
-                    for word in words:
-                        if len(current_line) + len(word) + 1 <= MAX_LINE_CHARS:
-                            current_line = current_line + " " + word if current_line else word
-                        else:
-                            if current_line:
-                                wrapped_lines.append(current_line)
-                            current_line = "   " + word  # 들여쓰기
-                    if current_line:
-                        wrapped_lines.append(current_line)
-                else:
-                    wrapped_lines.append(item)
+            # 좌우 여백 설정
+            MARGIN_X = 60
+            max_text_width = VIDEO_WIDTH - (MARGIN_X * 2)
             
+            # 폰트 로드 함수
+            from pathlib import Path
+            def _load_font(size):
+                if FONT_FILE:
+                    font_path = Path(__file__).parent.parent / "fonts" / FONT_FILE
+                    try:
+                        return ImageFont.truetype(str(font_path), size)
+                    except:
+                        pass
+                try:
+                    return ImageFont.truetype(self.font, size) if self.font else ImageFont.load_default()
+                except:
+                    return ImageFont.load_default()
+            
+            font_size = FONT_SIZE
+            font = _load_font(font_size)
+            
+            # 텍스트 줄바꿈: 실제 픽셀 너비 기준으로 줄바꿈
+            def _wrap_text_by_width(items, fnt, max_w):
+                """실제 렌더링 너비 기준으로 텍스트 줄바꿈"""
+                dummy = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+                result = []
+                for item in items:
+                    # 한 줄에 들어가는지 확인
+                    bbox = dummy.textbbox((0, 0), item, font=fnt)
+                    if (bbox[2] - bbox[0]) <= max_w:
+                        result.append(item)
+                    else:
+                        # 글자 단위로 줄바꿈 (한국어는 공백이 적으므로)
+                        current = ""
+                        for char in item:
+                            test = current + char
+                            bbox = dummy.textbbox((0, 0), test, font=fnt)
+                            if (bbox[2] - bbox[0]) <= max_w:
+                                current = test
+                            else:
+                                if current:
+                                    result.append(current)
+                                current = "  " + char  # 들여쓰기
+                        if current:
+                            result.append(current)
+                return result
+            
+            wrapped_lines = _wrap_text_by_width(checklist[:MAX_ITEMS], font, max_text_width)
             card_text = "\n".join(wrapped_lines)
             
-            # 폰트 로드
-            from pathlib import Path
-            if FONT_FILE:
-                font_path = Path(__file__).parent.parent / "fonts" / FONT_FILE
-                try:
-                    font = ImageFont.truetype(str(font_path), FONT_SIZE)
-                except:
-                    font = ImageFont.truetype(self.font, FONT_SIZE) if self.font else ImageFont.load_default()
-            else:
-                try:
-                    font = ImageFont.truetype(self.font, FONT_SIZE) if self.font else ImageFont.load_default()
-                except:
-                    font = ImageFont.load_default()
-            
-            # 텍스트 크기 계산
+            # 텍스트 크기 계산 → 넘치면 폰트 축소
             dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
             bbox = dummy_draw.textbbox((0, 0), card_text, font=font, spacing=LINE_SPACING)
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
+            
+            # 텍스트가 화면 높이의 85%를 넘으면 폰트 크기 축소
+            max_text_height = int(VIDEO_HEIGHT * 0.85)
+            while (text_width > max_text_width or text_height > max_text_height) and font_size > 30:
+                font_size -= 4
+                font = _load_font(font_size)
+                wrapped_lines = _wrap_text_by_width(checklist[:MAX_ITEMS], font, max_text_width)
+                card_text = "\n".join(wrapped_lines)
+                bbox = dummy_draw.textbbox((0, 0), card_text, font=font, spacing=LINE_SPACING)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            
+            if font_size != FONT_SIZE:
+                print(f"      ℹ️ 폰트 크기 자동 조정: {FONT_SIZE} → {font_size}")
             
             # 배경 이미지 로드
             if BG_IMAGE:
@@ -963,8 +990,8 @@ class MotionEffectsComposer:
             
             draw = ImageDraw.Draw(img)
             
-            # 중앙 정렬
-            x = (VIDEO_WIDTH - text_width) / 2
+            # 중앙 정렬 (좌우 여백 보장)
+            x = max(MARGIN_X, (VIDEO_WIDTH - text_width) / 2)
             y = (VIDEO_HEIGHT - text_height) / 2
             
             # 텍스트 그리기
