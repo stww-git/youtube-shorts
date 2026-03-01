@@ -38,7 +38,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False):
         """
         Execute the video generation pipeline.
         
@@ -369,7 +369,7 @@ class RecipeVideoPipeline:
         # Save prompt debug log before rendering
         debug_logger.save()
         
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, dynamic_subtitle=dynamic_subtitle)
         
         if not result:
             print_error("영상 합성 실패!")

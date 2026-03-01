@@ -106,6 +106,9 @@ def get_keyword_color(word: str, default_color: str = SUBTITLE_TEXT_COLOR) -> st
 SUBTITLE_IMPACT_COLOR = '#FFD700'  # 금색
 SUBTITLE_IMPACT_STROKE_WIDTH = 4
 
+# Pop-in 하이라이트 색상 (동적 자막에서 최신 어절 강조)
+POPIN_HIGHLIGHT_COLOR = '#FFD700'  # 금색 (최신 어절만 하이라이트, 이전 어절은 기본색)
+
 # 강조 키워드 목록
 SUBTITLE_IMPACT_KEYWORDS = ["절대", "경고", "비밀", "정답", "비법"]
 

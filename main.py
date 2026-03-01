@@ -52,7 +52,7 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
@@ -63,6 +63,7 @@ CHANNELS = {
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
+        "dynamic_subtitle": True, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
     },
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
@@ -78,6 +79,7 @@ CHANNELS = {
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.05,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
+        "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
     },
     "family-health-kr": {
         "enabled": False,          # True: 스케줄 실행
@@ -93,6 +95,7 @@ CHANNELS = {
         "bgm_enabled": True,      # True: 배경음악 사용
         "bgm_volume": 0.05,        # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3",  # assets/bgm/ 폴더 내 파일명
+        "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
     },
     # 새 채널 추가 시 아래 형식으로 추가됩니다:
     # "channel-id": {
@@ -145,6 +148,7 @@ def main():
     bgm_enabled = channel_settings.get("bgm_enabled", False)  # 배경음악 사용 여부
     bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
     bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
+    dynamic_subtitle = channel_settings.get("dynamic_subtitle", False)  # 동적 자막 애니메이션
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -193,7 +197,8 @@ def main():
                 include_disclaimer=include_disclaimer,
                 bgm_enabled=bgm_enabled,
                 bgm_volume=bgm_volume,
-                bgm_file=bgm_file
+                bgm_file=bgm_file,
+                dynamic_subtitle=dynamic_subtitle
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(

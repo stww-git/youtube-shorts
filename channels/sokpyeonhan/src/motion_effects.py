@@ -33,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -142,7 +142,7 @@ class MotionEffectsComposer:
 
                 # Add subtitles (center position, split for faster transitions)
                 if text and clip:
-                    clip = self._add_subtitle(clip, text, duration)
+                    clip = self._add_subtitle(clip, text, duration, dynamic_subtitle=dynamic_subtitle)
                 
                 if clip:
                     # Ensure exact duration
@@ -641,7 +641,7 @@ class MotionEffectsComposer:
         
         return parts
     
-    def _create_subtitle_image(self, text, style):
+    def _create_subtitle_image(self, text, style, highlight_word_idx=-1):
         """Creates a subtitle image using Pillow to avoid MoviePy trimming issues."""
         try:
 
@@ -654,7 +654,8 @@ class MotionEffectsComposer:
                 SUBTITLE_TEXT_COLOR, 
                 SUBTITLE_STROKE_COLOR, 
                 SUBTITLE_STROKE_WIDTH, 
-                SUBTITLE_MAX_WIDTH
+                SUBTITLE_MAX_WIDTH,
+                POPIN_HIGHLIGHT_COLOR
             )
             
             # Unpack style with config defaults
@@ -680,6 +681,7 @@ class MotionEffectsComposer:
             
             # Calculate space width once
             space_width = dummy_draw.textbbox((0, 0), " ", font=font)[2] - dummy_draw.textbbox((0, 0), " ", font=font)[0]
+            word_counter = 0  # 전체 단어 인덱스 추적 (하이라이트용)
             
             for word in words:
                 word_bbox = dummy_draw.textbbox((0, 0), word, font=font)
@@ -695,7 +697,13 @@ class MotionEffectsComposer:
                     current_line_width = 0
                 
                 # Add word to current line
-                color = get_keyword_color(word, text_color)
+                keyword_color = get_keyword_color(word, text_color)
+                # Pop-in 하이라이트: 최신 어절이고 키워드 색상이 아니면 하이라이트 적용
+                if highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
+                    color = POPIN_HIGHLIGHT_COLOR
+                else:
+                    color = keyword_color
+                word_counter += 1
                 current_line_words.append({
                     "text": word,
                     "width": word_width,
@@ -926,7 +934,7 @@ class MotionEffectsComposer:
             traceback.print_exc()
             return None
 
-    def _add_subtitle(self, clip, text: str, duration: float):
+    def _add_subtitle(self, clip, text: str, duration: float, dynamic_subtitle: bool = False):
         """Adds a subtitle overlay to a clip using Pillow for rendering."""
         from config.subtitle_config import (
             get_subtitle_style, is_impact_text, 
@@ -1024,12 +1032,77 @@ class MotionEffectsComposer:
                         txt_clip = txt_clip.set_start(current_time)
                     
                     subtitle_clips.append(txt_clip)
+                    # 동적 자막용: 원본 텍스트 저장
+                    txt_clip._subtitle_text = sentence
                 
                 current_time += seg_duration
             
             if subtitle_clips:
-                # Clean up temp files later if possible, but for now OS handles tmp
-                return CompositeVideoClip([clip] + subtitle_clips)
+                if dynamic_subtitle:
+                    # Pop-in 효과: 어절 단위로 순차적으로 나타나는 애니메이션
+                    animated_subtitle_clips = []
+                    for sub_clip_info in subtitle_clips:
+                        # 각 subtitle_clip은 이미 with_start()가 설정됨
+                        seg_text = sub_clip_info._subtitle_text if hasattr(sub_clip_info, '_subtitle_text') else ''
+                        seg_start = sub_clip_info.start if hasattr(sub_clip_info, 'start') else 0
+                        seg_dur = sub_clip_info.duration if hasattr(sub_clip_info, 'duration') else 0
+                        
+                        # 해당 segment의 원본 텍스트에서 어절 분리
+                        words = seg_text.split() if seg_text else []
+                        
+                        if len(words) <= 1 or seg_dur < 0.5:
+                            # 어절이 1개 이하이거나 시간이 너무 짧으면 기존 방식
+                            animated_subtitle_clips.append(sub_clip_info)
+                        else:
+                            # 어절별 Pop-in 애니메이션
+                            # 타이핑 구간: 전체 시간의 최대 50% (나머지는 완성 문장 유지)
+                            typing_ratio = min(0.5, 0.15 * len(words))  # 어절당 15%, 최대 50%
+                            typing_duration = seg_dur * typing_ratio
+                            hold_duration = seg_dur - typing_duration
+                            
+                            interval = typing_duration / len(words) if len(words) > 0 else typing_duration
+                            
+                            for w_idx in range(len(words)):
+                                # 누적 텍스트: 첫 w_idx+1개 어절
+                                partial_text = ' '.join(words[:w_idx + 1])
+                                
+                                # 마지막 어절이 아닌 경우: 최신 어절 하이라이트
+                                # 마지막 어절(완성 프레임): 하이라이트 해제 (-1)
+                                if w_idx < len(words) - 1:
+                                    highlight_idx = w_idx
+                                else:
+                                    highlight_idx = -1  # 완성 문장은 전부 기본색
+                                
+                                partial_img_path = self._create_subtitle_image(partial_text, style, highlight_word_idx=highlight_idx)
+                                if partial_img_path and os.path.exists(partial_img_path):
+                                    partial_clip = ImageClip(partial_img_path)
+                                    
+                                    # 마지막 어절이면 남은 시간 전부 사용
+                                    if w_idx == len(words) - 1:
+                                        partial_dur = hold_duration + interval
+                                    else:
+                                        partial_dur = interval
+                                    
+                                    partial_clip = self._set_exact_duration(partial_clip, partial_dur)
+                                    
+                                    try:
+                                        partial_clip = partial_clip.with_position(('center', SUBTITLE_Y_POSITION))
+                                    except AttributeError:
+                                        partial_clip = partial_clip.set_position(('center', SUBTITLE_Y_POSITION))
+                                    
+                                    partial_start = seg_start + (w_idx * interval)
+                                    try:
+                                        partial_clip = partial_clip.with_start(partial_start)
+                                    except AttributeError:
+                                        partial_clip = partial_clip.set_start(partial_start)
+                                    
+                                    animated_subtitle_clips.append(partial_clip)
+                    
+                    if animated_subtitle_clips:
+                        return CompositeVideoClip([clip] + animated_subtitle_clips)
+                else:
+                    # 기존 통짜 방식
+                    return CompositeVideoClip([clip] + subtitle_clips)
             return clip
                 
         except Exception as e:
