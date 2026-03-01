@@ -52,7 +52,7 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
+        "upload": True,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
