@@ -237,15 +237,15 @@ class MotionEffectsComposer:
                 
                 # Calculate background height
                 if use_pillow_title and title_img_height:
-                    bg_height = int(TOP_MARGIN + title_img_height + 40)
+                    bg_height = int(TOP_MARGIN + title_img_height + 80)
                 else:
                     avg_chars_per_line = 10
                     num_lines = max(1, (len(title_text) + avg_chars_per_line - 1) // avg_chars_per_line)
                     line_height = int(font_size * line_height_factor)
                     text_height = num_lines * line_height
-                    bg_height = int(TOP_MARGIN + text_height + 40)
+                    bg_height = int(TOP_MARGIN + text_height + 80)
                 
-                bg_height = max(bg_height, 180)
+                bg_height = max(bg_height, 220)
                 bg_width = VIDEO_WIDTH
                 
                 print(f"      📐 제목 배경: 높이 {bg_height}px, 폰트 {font_size}px")
@@ -261,8 +261,8 @@ class MotionEffectsComposer:
                 except AttributeError:
                     bg_clip = bg_clip.set_position(('center', 0))
                 
-                # Position title
-                text_y_position = TOP_MARGIN + 20
+                # Position title (제목을 아래로 배치, 검은색 배경 내부에 유지)
+                text_y_position = TOP_MARGIN + 40
                 
                 try:
                     title_clip = title_clip.with_position(('center', text_y_position))

@@ -64,6 +64,7 @@ class RecipeVideoPipeline:
         MAX_RECIPE_ATTEMPTS = 5  # 최대 5개 레시피 시도
         recipe = None
         kick_analysis = None
+        best_candidate = None  # (recipe, kick_analysis, confidence) - Best Effort 후보
         
         for attempt in range(1, MAX_RECIPE_ATTEMPTS + 1):
             recipe = self.crawler.get_next_recipe()
@@ -89,6 +90,11 @@ class RecipeVideoPipeline:
                 print_success(f"Kick 확인: {kick_analysis.get('kick_candidate', 'N/A')}")
                 break  # Kick 있으면 루프 탈출
             else:
+                # Best Effort: 가장 높은 신뢰도의 후보를 기록
+                confidence = kick_analysis.get("confidence", 0)
+                if not best_candidate or confidence > best_candidate[2]:
+                    best_candidate = (recipe, kick_analysis, confidence)
+                
                 print_warning(f"이 레시피에는 명확한 Kick이 없습니다. 다음 레시피 시도...")
                 print_info(f"   이유: {kick_analysis.get('reason', 'N/A')}")
                 print_info(f"   신뢰도: {kick_analysis.get('confidence', 0)}/10")
@@ -99,7 +105,17 @@ class RecipeVideoPipeline:
                     category="skipped"
                 )
                 if attempt == MAX_RECIPE_ATTEMPTS:
-                    raise Exception(f"{MAX_RECIPE_ATTEMPTS}개 레시피 모두 Kick 부재로 스킵됨")
+                    # Best Effort: 가장 높은 신뢰도의 레시피를 채택
+                    if best_candidate:
+                        recipe = best_candidate[0]
+                        kick_analysis = best_candidate[1]
+                        kick_analysis["has_kick"] = True  # 강제 활성화
+                        original_title = recipe.get('title', '요리 레시피')
+                        print_warning(f"⚠️ {MAX_RECIPE_ATTEMPTS}개 모두 낮은 신뢰도 → 최고 신뢰도({best_candidate[2]}/10) 레시피 채택")
+                        print_info(f"   채택 레시피: {original_title}")
+                        print_info(f"   채택 Kick: {kick_analysis.get('kick_candidate', 'N/A')}")
+                    else:
+                        raise Exception(f"{MAX_RECIPE_ATTEMPTS}개 레시피 모두 Kick 부재로 스킵됨")
         
         # Initialize prompt debug logger
         debug_logger = reset_prompt_logger()
