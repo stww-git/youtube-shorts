@@ -33,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False, typing_speed: float = 0.20):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -142,7 +142,7 @@ class MotionEffectsComposer:
 
                 # Add subtitles (center position, split for faster transitions)
                 if text and clip:
-                    clip = self._add_subtitle(clip, text, duration, dynamic_subtitle=dynamic_subtitle)
+                    clip = self._add_subtitle(clip, text, duration, dynamic_subtitle=dynamic_subtitle, typing_speed=typing_speed)
                 
                 if clip:
                     # Ensure exact duration
@@ -934,7 +934,7 @@ class MotionEffectsComposer:
             traceback.print_exc()
             return None
 
-    def _add_subtitle(self, clip, text: str, duration: float, dynamic_subtitle: bool = False):
+    def _add_subtitle(self, clip, text: str, duration: float, dynamic_subtitle: bool = False, typing_speed: float = 0.20):
         """Adds a subtitle overlay to a clip using Pillow for rendering."""
         from config.subtitle_config import (
             get_subtitle_style, is_impact_text, 
@@ -1055,8 +1055,8 @@ class MotionEffectsComposer:
                             animated_subtitle_clips.append(sub_clip_info)
                         else:
                             # 어절별 Pop-in 애니메이션
-                            # 타이핑 구간: 전체 시간의 최대 50% (나머지는 완성 문장 유지)
-                            typing_ratio = min(0.5, 0.15 * len(words))  # 어절당 15%, 최대 50%
+                            # 타이핑 구간: 전체 시간의 최대 60% (나머지는 완성 문장 유지)
+                            typing_ratio = min(0.95, typing_speed * len(words))  # main.py에서 직접 조절
                             typing_duration = seg_dur * typing_ratio
                             hold_duration = seg_dur - typing_duration
                             
@@ -1066,18 +1066,14 @@ class MotionEffectsComposer:
                                 # 누적 텍스트: 첫 w_idx+1개 어절
                                 partial_text = ' '.join(words[:w_idx + 1])
                                 
-                                # 마지막 어절이 아닌 경우: 최신 어절 하이라이트
-                                # 마지막 어절(완성 프레임): 하이라이트 해제 (-1)
-                                if w_idx < len(words) - 1:
-                                    highlight_idx = w_idx
-                                else:
-                                    highlight_idx = -1  # 완성 문장은 전부 기본색
+                                # 모든 어절(마지막 포함): 최신 어절 하이라이트
+                                highlight_idx = w_idx
                                 
                                 partial_img_path = self._create_subtitle_image(partial_text, style, highlight_word_idx=highlight_idx)
                                 if partial_img_path and os.path.exists(partial_img_path):
                                     partial_clip = ImageClip(partial_img_path)
                                     
-                                    # 마지막 어절이면 남은 시간 전부 사용
+                                    # 마지막 어절이면 남은 시간 전부 사용 (하이라이트 유지)
                                     if w_idx == len(words) - 1:
                                         partial_dur = hold_duration + interval
                                     else:

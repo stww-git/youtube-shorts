@@ -51,8 +51,8 @@ ACTIVE_CHANNEL = "sokpyeonhan"
 CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
-        "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "test_mode": True,        # False: 실제 이미지 생성
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
@@ -64,6 +64,7 @@ CHANNELS = {
         "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
         "dynamic_subtitle": True, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
+        "typing_speed": 0.5,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
     },
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
@@ -149,6 +150,7 @@ def main():
     bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
     bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
     dynamic_subtitle = channel_settings.get("dynamic_subtitle", False)  # 동적 자막 애니메이션
+    typing_speed = channel_settings.get("typing_speed", 0.20)  # 타이핑 속도
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -198,7 +200,8 @@ def main():
                 bgm_enabled=bgm_enabled,
                 bgm_volume=bgm_volume,
                 bgm_file=bgm_file,
-                dynamic_subtitle=dynamic_subtitle
+                dynamic_subtitle=dynamic_subtitle,
+                typing_speed=typing_speed
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(
