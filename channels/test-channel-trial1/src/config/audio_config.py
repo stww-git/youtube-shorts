@@ -7,19 +7,19 @@ TTS_VOICE_NAME = "Kore"  # Gemini TTS 음성
 # keep_silence: 분할 후 남길 무음 길이 (ms)
 SILENCE_CONFIGS = [
     # 1000ms 무음에서 여러 thresh 시도 (관대 → 엄격)
-    {"min_silence_len": 1000, "silence_thresh": -30, "keep_silence": 200},
-    {"min_silence_len": 1000, "silence_thresh": -28, "keep_silence": 200},
-    {"min_silence_len": 1000, "silence_thresh": -25, "keep_silence": 200},
+    {"min_silence_len": 1000, "silence_thresh": -30, "keep_silence": 300},
+    {"min_silence_len": 1000, "silence_thresh": -28, "keep_silence": 300},
+    {"min_silence_len": 1000, "silence_thresh": -25, "keep_silence": 300},
     # 900ms 무음에서 여러 thresh 시도
-    {"min_silence_len": 900, "silence_thresh": -30, "keep_silence": 200},
-    {"min_silence_len": 900, "silence_thresh": -28, "keep_silence": 200},
-    {"min_silence_len": 900, "silence_thresh": -25, "keep_silence": 200},
+    {"min_silence_len": 900, "silence_thresh": -30, "keep_silence": 300},
+    {"min_silence_len": 900, "silence_thresh": -28, "keep_silence": 300},
+    {"min_silence_len": 900, "silence_thresh": -25, "keep_silence": 300},
     # 800ms 무음에서 여러 thresh 시도
-    {"min_silence_len": 800, "silence_thresh": -30, "keep_silence": 200},
-    {"min_silence_len": 800, "silence_thresh": -28, "keep_silence": 200},
-    {"min_silence_len": 800, "silence_thresh": -25, "keep_silence": 200},
+    {"min_silence_len": 800, "silence_thresh": -30, "keep_silence": 300},
+    {"min_silence_len": 800, "silence_thresh": -28, "keep_silence": 300},
+    {"min_silence_len": 800, "silence_thresh": -25, "keep_silence": 300},
     # 700ms 무음에서 여러 thresh 시도
-    {"min_silence_len": 700, "silence_thresh": -30, "keep_silence": 200},
-    {"min_silence_len": 700, "silence_thresh": -28, "keep_silence": 200},
-    {"min_silence_len": 700, "silence_thresh": -25, "keep_silence": 200},
+    {"min_silence_len": 700, "silence_thresh": -30, "keep_silence": 300},
+    {"min_silence_len": 700, "silence_thresh": -28, "keep_silence": 300},
+    {"min_silence_len": 700, "silence_thresh": -25, "keep_silence": 300},
 ]

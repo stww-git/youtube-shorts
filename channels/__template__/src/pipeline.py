@@ -38,7 +38,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False, typing_speed: float = 0.20, tts_voice_name: str = "Kore"):
         """
         Execute the video generation pipeline.
         
@@ -151,7 +151,7 @@ class RecipeVideoPipeline:
         
         try:
             # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
-            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, tts_fallback=tts_fallback)
+            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, voice=tts_voice_name, tts_fallback=tts_fallback)
         
             print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
             total_duration = sum(s['duration'] for s in scenes)

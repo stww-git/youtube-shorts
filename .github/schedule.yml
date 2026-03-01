@@ -33,3 +33,12 @@ channels:
       - "11:30"
       - "17:30"
 
+  money-bite:
+    name: "Money Bite"
+    enabled: false
+    # US EST 기준 최적 시간대 (KST로 표시)
+    times:
+      - "22:00"   # 8 AM EST — 미국 출근 시간
+      - "02:00"   # 12 PM EST — 미국 점심 시간
+      - "09:00"   # 7 PM EST — 미국 퇴근 후 피크
+

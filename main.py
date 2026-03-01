@@ -65,7 +65,28 @@ CHANNELS = {
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
         "dynamic_subtitle": True, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
         "typing_speed": 0.5,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
+        "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
     },
+
+    "money-bite": {
+        "enabled": False,          # True: 스케줄 실행
+        "test_mode": False,        # True: 테스트 모드 (이미지 생성 생략)
+        "upload": False,          # True: YouTube 업로드
+        "privacy": "private",     # public / unlisted / private
+        "parallel": False,        # True: 이미지 병렬 생성
+        "tts_fallback": False,    # False: 실패 시 바로 종료
+        "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
+        "summary_card_duration": 2.0,
+        "summary_in_description": False,
+        "disclaimer": False,       # True: 영상 끝에 면책 조항 추가
+        "bgm_enabled": False,     # True: 배경음악 사용
+        "bgm_volume": 0.1,
+        "bgm_file": None,
+        "dynamic_subtitle": True,
+        "typing_speed": 0.5,
+        "tts_voice_name": "Kore",  # 영어: Aoede, Charon, Fenrir, Puck 등
+    },
+
     "test-channel-trial1": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드
@@ -81,6 +102,8 @@ CHANNELS = {
         "bgm_volume": 0.05,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
         "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
+        "typing_speed": 0.20,
+        "tts_voice_name": "Kore",
     },
     "family-health-kr": {
         "enabled": False,          # True: 스케줄 실행
@@ -93,11 +116,14 @@ CHANNELS = {
         "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
         "summary_in_description": False,  # True: 핵심 정보를 YouTube 설명에 포함
         "disclaimer": False,       # True: 영상 끝에 면책 조항 추가
-        "bgm_enabled": True,      # True: 배경음악 사용
+        "bgm_enabled": False,      # True: 배경음악 사용
         "bgm_volume": 0.05,        # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3",  # assets/bgm/ 폴더 내 파일명
         "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
+        "typing_speed": 0.5,
+        "tts_voice_name": "Kore",
     },
+
     # 새 채널 추가 시 아래 형식으로 추가됩니다:
     # "channel-id": {
     #     "enabled": True,
@@ -151,6 +177,7 @@ def main():
     bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
     dynamic_subtitle = channel_settings.get("dynamic_subtitle", False)  # 동적 자막 애니메이션
     typing_speed = channel_settings.get("typing_speed", 0.20)  # 타이핑 속도
+    tts_voice_name = channel_settings.get("tts_voice_name", "Kore")  # TTS 음성
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -201,7 +228,8 @@ def main():
                 bgm_volume=bgm_volume,
                 bgm_file=bgm_file,
                 dynamic_subtitle=dynamic_subtitle,
-                typing_speed=typing_speed
+                typing_speed=typing_speed,
+                tts_voice_name=tts_voice_name
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(
