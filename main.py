@@ -52,20 +52,24 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
+        "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
+        "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
+        "typing_speed": 0.3,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
+        "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
+        "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
+        "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
+        "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
+
+        "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
-        "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
-        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
-        "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
         "disclaimer": False,      # True: 면책 조항 추가
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
-        "dynamic_subtitle": True, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
-        "typing_speed": 0.5,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
-        "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
     },
 
     "money-bite": {
@@ -82,8 +86,8 @@ CHANNELS = {
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.1,
         "bgm_file": None,
-        "dynamic_subtitle": True,
-        "typing_speed": 0.5,
+        "subtitle_mode": "accumulate", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
+        "typing_speed": 0.3,
         "tts_voice_name": "Kore",  # 영어: Aoede, Charon, Fenrir, Puck 등
     },
 
@@ -101,7 +105,7 @@ CHANNELS = {
         "bgm_enabled": False,     # True: 배경음악 사용
         "bgm_volume": 0.05,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
-        "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
+        "subtitle_mode": "static",  # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
         "typing_speed": 0.20,
         "tts_voice_name": "Kore",
     },
@@ -119,7 +123,7 @@ CHANNELS = {
         "bgm_enabled": False,      # True: 배경음악 사용
         "bgm_volume": 0.05,        # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
         "bgm_file": "cooking.mp3",  # assets/bgm/ 폴더 내 파일명
-        "dynamic_subtitle": False, # True: 자막 어절별 Pop-in 애니메이션 / False: 기존 통짜 표시
+        "subtitle_mode": "static",  # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
         "typing_speed": 0.5,
         "tts_voice_name": "Kore",
     },
@@ -175,8 +179,11 @@ def main():
     bgm_enabled = channel_settings.get("bgm_enabled", False)  # 배경음악 사용 여부
     bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
     bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
-    dynamic_subtitle = channel_settings.get("dynamic_subtitle", False)  # 동적 자막 애니메이션
+    subtitle_mode = channel_settings.get("subtitle_mode", "static")  # 자막 모드 (static/accumulate/single)
     typing_speed = channel_settings.get("typing_speed", 0.20)  # 타이핑 속도
+    single_font_size = channel_settings.get("single_font_size", 140)  # single 모드 폰트 크기
+    static_font_size = channel_settings.get("static_font_size", 80)  # static 모드 폰트 크기
+    ai_subtitle_effects = channel_settings.get("ai_subtitle_effects", False)  # AI 자막 효과
     tts_voice_name = channel_settings.get("tts_voice_name", "Kore")  # TTS 음성
     
     if not channel_id:
@@ -227,8 +234,11 @@ def main():
                 bgm_enabled=bgm_enabled,
                 bgm_volume=bgm_volume,
                 bgm_file=bgm_file,
-                dynamic_subtitle=dynamic_subtitle,
+                subtitle_mode=subtitle_mode,
                 typing_speed=typing_speed,
+                single_font_size=single_font_size,
+                static_font_size=static_font_size,
+                ai_subtitle_effects=ai_subtitle_effects,
                 tts_voice_name=tts_voice_name
             )
         elif hasattr(pipeline_module, 'run'):

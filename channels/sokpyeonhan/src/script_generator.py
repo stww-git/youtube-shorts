@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, KICK_ANALYSIS_PROMPT
+from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, KICK_ANALYSIS_PROMPT, SUBTITLE_EFFECT_PROMPT
 from core.utils import format_ingredients, format_steps
 import re
 import json
@@ -240,6 +240,70 @@ class RecipeScriptGenerator:
                     return []
         
         return []
+
+    def generate_subtitle_effects(self, scenes: list) -> tuple:
+        """
+        AI가 대본을 분석하여 어절별 효과와 색상 키워드를 지정합니다.
+        
+        Args:
+            scenes: 대본 scenes 리스트 [{scene_id, audio_text}, ...]
+            
+        Returns:
+            tuple: (effects_dict, color_keywords)
+                - effects_dict: {scene_id: {"display": str, "words": [...]}}
+                - color_keywords: {"#FFD700": ["keyword1", ...], ...}
+        """
+        # 대본 텍스트 생성
+        script_lines = [f"{scene['scene_id']}. {scene['audio_text']}" for scene in scenes]
+        script_text = "\n".join(script_lines)
+        
+        prompt = SUBTITLE_EFFECT_PROMPT.format(script_text=script_text)
+        
+        try:
+            print(f"\n   🎨 [자막 효과 분석 중] AI가 어절별 효과를 판단합니다...")
+            self._increment_api_call("Subtitle Effect Analysis")
+            
+            response = self.client.models.generate_content(
+                model=TEXT_MODEL,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.3
+                )
+            )
+            
+            result_text = response.text
+            
+            # JSON 파싱
+            json_match = re.search(r'\{[\s\S]*"scenes"[\s\S]*\}', result_text, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                effect_scenes = data.get('scenes', [])
+                color_keywords = data.get('color_keywords', {})
+                
+                # scene_id 기반 딕셔너리로 변환
+                result = {}
+                for es in effect_scenes:
+                    sid = es.get('scene_id')
+                    result[sid] = {
+                        'display': es.get('display', 'single'),
+                        'words': es.get('words', [])
+                    }
+                
+                total_effects = sum(
+                    1 for es in effect_scenes 
+                    for w in es.get('words', []) 
+                    if w.get('effect')
+                )
+                color_count = sum(len(v) for v in color_keywords.values())
+                print(f"   ✅ {len(effect_scenes)}개 장면, {total_effects}개 효과, {color_count}개 색상 키워드 지정 완료")
+                return result, color_keywords
+            else:
+                print(f"   ⚠️ JSON 파싱 실패, 기본값 사용")
+                return {}, {}
+                
+        except Exception as e:
+            print(f"   ⚠️ 자막 효과 분석 실패: {e}")
+            return {}, {}
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False, typing_speed: float = 0.20, tts_voice_name: str = "Kore"):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, tts_voice_name: str = "Kore"):
         """
         Execute the video generation pipeline.
         
@@ -193,6 +193,28 @@ class RecipeVideoPipeline:
         script_content = "\n".join(script_lines)
         title_input = f"[title]\n{original_title}\n\n[script_content]\n{script_content}"
         debug_logger.log_prompt_step(4, "제목 생성", title_input, "(TITLE_GENERATION_PROMPT 사용 - title, script_content 변수 전달)", video_title, "TITLE_GENERATION_PROMPT")
+        
+        # ==========================================
+        # Step 4.5: AI 자막 효과 분석 (optional)
+        # ==========================================
+        subtitle_effects = {}
+        color_keywords = {}
+        if ai_subtitle_effects:
+            print_step(4, 7, "자막 효과", "🎨 AI 자막 효과 분석 중")
+            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes)
+            
+            # 효과 데이터를 scenes에 병합
+            for scene in scenes:
+                sid = scene.get('scene_id')
+                if sid in subtitle_effects:
+                    scene['subtitle_effect'] = subtitle_effects[sid]
+            
+            # Debug 로깅
+            if subtitle_effects:
+                effect_input = "\n".join([f"{scene['scene_id']}. {scene['audio_text']}" for scene in scenes])
+                debug_data = {"effects": subtitle_effects, "color_keywords": color_keywords}
+                effect_output = json.dumps(debug_data, ensure_ascii=False, indent=2)
+                debug_logger.log_prompt_step(4.5, "자막 효과 분석", effect_input, "(SUBTITLE_EFFECT_PROMPT 사용 - script_text 변수 전달)", effect_output, "SUBTITLE_EFFECT_PROMPT")
         
         # Create output folder (채널별 출력 경로 사용)
         channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
@@ -369,7 +391,7 @@ class RecipeVideoPipeline:
         # Save prompt debug log before rendering
         debug_logger.save()
         
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, dynamic_subtitle=dynamic_subtitle, typing_speed=typing_speed)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, subtitle_mode=subtitle_mode, typing_speed=typing_speed, single_font_size=single_font_size, static_font_size=static_font_size, ai_subtitle_effects=ai_subtitle_effects, color_keywords=color_keywords)
         
         if not result:
             print_error("영상 합성 실패!")
