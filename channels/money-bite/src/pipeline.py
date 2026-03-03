@@ -3,9 +3,9 @@ import os
 import re
 import json
 import logging
-from crawler import RecipeCrawler
-from title_generator import RecipeTitleGenerator
-from script_generator import RecipeScriptGenerator
+from topic_generator import TopicGenerator
+from title_generator import TitleGenerator
+from script_generator import ScriptGenerator
 from image_prompt_generator import ImagePromptGenerator
 from image_generator import ImageGenerator
 from audio_generator import AudioGenerator
@@ -13,7 +13,7 @@ from motion_effects import MotionEffectsComposer
 from core.utils import (
     print_header, print_step, print_substep, print_success, 
     print_warning, print_error, print_info, 
-    create_output_folder, sanitize_filename, format_steps
+    create_output_folder, sanitize_filename
 )
 from core.channel_manager import (
     get_channel_config, get_channel_prompts, get_upload_config, get_refresh_token, get_output_dir
@@ -30,16 +30,16 @@ class RecipeVideoPipeline:
     
     def __init__(self):
         print_substep("Initializing modules...")
-        self.crawler = RecipeCrawler()
-        self.title_gen = RecipeTitleGenerator()
-        self.script_gen = RecipeScriptGenerator()
+        self.topic_gen = TopicGenerator()
+        self.title_gen = TitleGenerator()
+        self.script_gen = ScriptGenerator()
         self.image_prompt_gen = ImagePromptGenerator()
         self.image_gen = ImageGenerator()
         self.audio_gen = AudioGenerator()
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, dynamic_subtitle: bool = False, typing_speed: float = 0.20, tts_voice_name: str = "Kore"):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", **kwargs):
         """
         Execute the video generation pipeline for Money Bite channel.
         """
@@ -51,35 +51,27 @@ class RecipeVideoPipeline:
         # ==========================================
         # Step 1: 금융 토픽 선택
         # ==========================================
-        print_step(1, 6, "금융 토픽 선택", "💰 금융 주제 데이터베이스 조회 중")
+        print_step(1, 6, "금융 용어 선택", "📚 terms.json에서 다음 용어 선택 중")
         
-        topic = self.crawler.get_next_recipe()
+        topic = self.topic_gen.get_next_topic()
         
         if not topic:
-            print_error("사용 가능한 금융 토픽이 없습니다.")
-            raise Exception("사용 가능한 금융 토픽이 없습니다.")
+            return  # 모든 용어 사용 완료 — topic_generator에서 메시지 출력됨
         
-        original_title = topic.get('title', 'Finance Topic')
-        print_success(f"토픽 선택 완료!")
-        print(f"\n   📌 주제: {original_title}")
-        print(f"   📂 카테고리: {topic.get('category', 'N/A')}")
-        print(f"   🔑 핵심 개념: {len(topic.get('ingredients', []))}개")
-        print(f"   📋 교육 포인트: {len(topic.get('steps', []))}개")
+        term = topic['term']
+        print_success(f"용어 선택 완료!")
+        print(f"\n   📌 용어: {term}")
         
         # Initialize prompt debug logger
         debug_logger = reset_prompt_logger()
         debug_logger.log_raw_data({
-            "topic_id": topic.get('recipe_id', ''),
-            "title": original_title,
-            "category": topic.get('category', ''),
-            "key_concepts": topic.get('ingredients', []),
-            "teaching_points": topic.get('steps', []),
-        }, data_type="금융 토픽")
+            "term": term,
+        }, data_type="금융 용어")
         
         # ==========================================
-        # Step 2: 대본 생성
+        # Step 2: 대본 생성 (용어 기반)
         # ==========================================
-        print_step(2, 6, "대본 생성", "✍️ Gemini AI 작성 중")
+        print_step(2, 6, "대본 생성", "✍️ 용어를 쉽게 설명하는 대본 작성 중")
         
         script_json = self.script_gen.generate_script(topic)
         
@@ -115,26 +107,23 @@ class RecipeVideoPipeline:
         print("")
         
         # Log script generation
-        actual_steps_text = format_steps(topic.get('steps', []))
-        raw_steps_json = json.dumps(topic.get('steps', []), ensure_ascii=False, indent=2)
-        script_input = f"[title]\n{original_title}\n\n[steps - 원본 (JSON)]\n{raw_steps_json}\n\n[steps - 프롬프트에 전달된 값]\n{actual_steps_text}"
+        script_input = f"[term]\n{term}"
         script_output = json.dumps(script_data, ensure_ascii=False, indent=2)
         debug_logger.log_prompt_step(2, "대본 생성", script_input, "(SCRIPT_GENERATION_PROMPT 사용)", script_output, "SCRIPT_GENERATION_PROMPT")
-
+        
         # ==========================================
         # Step 3: 제목 생성 (대본 기반)
         # ==========================================
-        print_step(3, 6, "제목 생성", "✨ 대본 기반 제목 생성 중")
+        print_step(3, 6, "제목 생성", "✨ 대본 내용 기반 제목 생성 중")
         
         video_title = self.title_gen.generate_title(topic, scenes)
         print(f"\n   📌 생성된 제목: {video_title}")
         
         # Log title generation
         script_lines = [f"{scene['scene_id']}번: {scene['audio_text']}" for scene in scenes]
-        script_content = "\n".join(script_lines)
-        title_input = f"[title]\n{original_title}\n\n[script_content]\n{script_content}"
+        title_input = f"[term]\n{term}\n\n[script_content]\n" + "\n".join(script_lines)
         debug_logger.log_prompt_step(3, "제목 생성", title_input, "(TITLE_GENERATION_PROMPT 사용)", video_title, "TITLE_GENERATION_PROMPT")
-        
+
         # Create output folder (채널별 출력 경로 사용)
         channel_output_base = str(get_output_dir(channel_id)) if channel_id else None
         output_dir = create_output_folder(video_title, base_output_dir=channel_output_base)
@@ -142,6 +131,28 @@ class RecipeVideoPipeline:
         
         # Set output dir for prompt debug logger
         debug_logger.set_output_dir(output_dir)
+        
+        # ==========================================
+        # Step 3.5: AI 자막 효과 분석 (optional)
+        # ==========================================
+        subtitle_effects = {}
+        color_keywords = {}
+        if ai_subtitle_effects:
+            print_step(3, 6, "자막 효과", "🎨 AI 자막 효과 분석 중")
+            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes)
+            
+            # 효과 데이터를 scenes에 병합
+            for scene in scenes:
+                sid = scene.get('scene_id')
+                if sid in subtitle_effects:
+                    scene['subtitle_effect'] = subtitle_effects[sid]
+            
+            # Debug 로깅
+            if subtitle_effects:
+                effect_input = "\n".join([f"{scene['scene_id']}. {scene['audio_text']}" for scene in scenes])
+                debug_data = {"effects": subtitle_effects, "color_keywords": color_keywords}
+                effect_output = json.dumps(debug_data, ensure_ascii=False, indent=2)
+                debug_logger.log_prompt_step(3.5, "자막 효과 분석", effect_input, "(SUBTITLE_EFFECT_PROMPT 사용)", effect_output, "SUBTITLE_EFFECT_PROMPT")
         
         # Save title and script to file
         script_file = os.path.join(output_dir, "script.txt")
@@ -266,24 +277,15 @@ class RecipeVideoPipeline:
         # Generate summary checklist if enabled
         summary_checklist = None
         if include_summary_card:
-            # 금융 토픽 내용으로 요약 카드 생성
-            steps_text = format_steps(topic.get('steps', []))
-            concepts_list = topic.get('ingredients', [])
-            if concepts_list and isinstance(concepts_list[0], dict):
-                concepts_text = ", ".join([f"{i.get('name', '')} ({i.get('amount', '')})".strip() for i in concepts_list])
-            elif isinstance(concepts_list, list):
-                concepts_text = ", ".join(concepts_list)
-            else:
-                concepts_text = str(concepts_list)
+            # 대본 내용으로 요약 카드 생성
+            script_text = "\n".join([f"{s['scene_id']}. {s['audio_text']}" for s in scenes])
             
             full_content = f"""
-[주제] {topic.get('title', '')}
+[용어] {term}
+[제목] {video_title}
 
-[핵심 개념]
-{concepts_text}
-
-[교육 포인트]
-{steps_text}
+[대본]
+{script_text}
 """
             summary_checklist = self.script_gen.generate_summary(full_content)
             
@@ -298,7 +300,7 @@ class RecipeVideoPipeline:
         # Save prompt debug log before rendering
         debug_logger.save()
         
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, dynamic_subtitle=dynamic_subtitle, typing_speed=typing_speed)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title, summary_checklist=summary_checklist, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, subtitle_mode=subtitle_mode, typing_speed=typing_speed, single_font_size=single_font_size, static_font_size=static_font_size, ai_subtitle_effects=ai_subtitle_effects, color_keywords=color_keywords, ken_burns_effect=ken_burns_effect)
         
         if not result:
             print_error("영상 합성 실패!")
@@ -308,11 +310,9 @@ class RecipeVideoPipeline:
         print_success(f"Final video saved to {final_output}")
         
         # Mark topic as used
-        self.crawler.mark_as_used(
-            topic['recipe_id'], 
-            video_title, 
-            topic.get('category', 'finance'),
-            topic.get('url')
+        self.topic_gen.mark_as_used(
+            term, 
+            video_title
         )
         
         if result and upload_to_youtube:

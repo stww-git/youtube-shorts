@@ -1,11 +1,13 @@
 """
 Money Bite 대본 생성기 모듈
 
-금융/투자 토픽을 바탕으로 YouTube Shorts 대본을 생성합니다.
+금융 용어를 바탕으로 YouTube Shorts 대본을 생성합니다.
 """
 
 import os
 import sys
+import re
+import json
 import time
 import logging
 
@@ -15,16 +17,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
-from core.utils import format_ingredients, format_steps
-import re
-import json
+from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, SUBTITLE_EFFECT_PROMPT
 
 logger = logging.getLogger(__name__)
 
 
-class RecipeScriptGenerator:
-    """금융 토픽 기반 대본 생성기 (파이프라인 호환을 위해 클래스명 유지)"""
+class ScriptGenerator:
+    """금융 용어 기반 대본 생성기"""
     
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
@@ -37,46 +36,36 @@ class RecipeScriptGenerator:
             self.client = genai.Client(api_key=self.api_key)
 
     def _increment_api_call(self, call_type: str = "generate_content"):
-        """Increment and log API call count."""
         self.api_call_count += 1
         print(f"   📊 [API Call #{self.api_call_count}] {call_type}")
 
     def get_api_call_count(self):
-        """Return total API calls made."""
         return self.api_call_count
 
-
-
-    def generate_script(self, recipe: dict) -> str:
+    def generate_script(self, topic: dict) -> str:
         """
-        금융 토픽을 바탕으로 8줄 구조의 대본을 생성합니다.
+        금융 용어를 바탕으로 7줄 대본을 생성합니다.
         
         Args:
-            recipe: 토픽 딕셔너리 {title, ingredients, steps, ...}
+            topic: {"term": "PER 쉽게 설명"}
             
         Returns:
             JSON 형식의 대본 문자열 (실패 시 None)
         """
-        title = recipe.get('title', 'Finance Topic')
-        steps = format_steps(recipe.get('steps', []))
+        term = topic.get('term', 'Finance Topic')
         
-        prompt = SCRIPT_GENERATION_PROMPT.format(
-            title=title,
-            steps=steps
-        )
+        prompt = SCRIPT_GENERATION_PROMPT.format(term=term)
         
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                logger.info(f"Generating recipe script for: {title}")
+                logger.info(f"Generating script for: {term}")
                 if attempt == 1:
-                    print(f"\n--- [DEBUG] Finance Script Generation ---")
-                    print(f"   주제: {title}")
-                    print(f"   교육 포인트: {len(recipe.get('steps', []))}개")
-                    print(f"   ----------------------------------------")
+                    print(f"\n--- [Script Generation] ---")
+                    print(f"   용어: {term}")
                 else:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                 
-                self._increment_api_call("Finance Script Generation")
+                self._increment_api_call("Script Generation")
                 response = self.client.models.generate_content(
                     model=TEXT_MODEL,
                     contents=[prompt],
@@ -90,13 +79,12 @@ class RecipeScriptGenerator:
                 error_str = str(e)
                 
                 if attempt < MAX_RETRIES:
-                    logger.warning(f"Recipe script generation failed (attempt {attempt}/{MAX_RETRIES}): {e}")
+                    logger.warning(f"Script generation failed (attempt {attempt}/{MAX_RETRIES}): {e}")
                     print(f"\n   ⚠️  [에러 발생] 재시도 대기 중... ({RETRY_DELAY}초)")
                     print(f"   원인: {error_str[:80]}...")
                     time.sleep(RETRY_DELAY)
                     continue
                 else:
-                    # 기본 모델 모두 실패 시 fallback 모델로 시도
                     if TEXT_FALLBACK_MODEL:
                         print(f"\n   🔄 기본 모델 실패, fallback 모델({TEXT_FALLBACK_MODEL})로 재시도...")
                         try:
@@ -113,24 +101,15 @@ class RecipeScriptGenerator:
                         except Exception as fallback_e:
                             print(f"   ❌ Fallback도 실패: {fallback_e}")
                     
-                    logger.error(f"Recipe script generation failed after {MAX_RETRIES} attempts: {e}")
+                    logger.error(f"Script generation failed after {MAX_RETRIES} attempts: {e}")
                     print(f"\n{'❌'*25}")
                     print(f"  ❌ [치명적 에러] 대본 생성 실패")
                     print(f"{'❌'*25}")
-                    print(f"   {MAX_RETRIES}번 재시도 모두 실패")
-                    print(f"   원인: {error_str}")
-                    print(f"{'❌'*25}\n")
                     return None
 
     def generate_summary(self, article_content: str) -> list:
         """
-        금융 토픽에서 핵심 체크리스트를 추출합니다.
-        
-        Args:
-            article_content: 토픽 정보
-            
-        Returns:
-            체크리스트 문자열 리스트
+        금융 용어 설명에서 핵심 체크리스트를 추출합니다.
         """
         prompt = SUMMARY_GENERATION_PROMPT.format(
             article_content=article_content[:3000]
@@ -148,15 +127,11 @@ class RecipeScriptGenerator:
                     model=TEXT_MODEL,
                     contents=[prompt],
                     config=types.GenerateContentConfig(
-                        temperature=0.3  # 낮은 온도로 정확한 추출
+                        temperature=0.3
                     )
                 )
                 
-                # JSON 파싱
-                import re
-                import json
                 text = response.text
-                # JSON 블록 추출
                 json_match = re.search(r'\{[\s\S]*\}', text)
                 if json_match:
                     data = json.loads(json_match.group())
@@ -177,17 +152,67 @@ class RecipeScriptGenerator:
         
         return []
 
+    def generate_subtitle_effects(self, scenes: list) -> tuple:
+        """
+        AI가 대본을 분석하여 어절별 효과와 색상 키워드를 지정합니다.
+        
+        Args:
+            scenes: 대본 scenes 리스트 [{scene_id, audio_text}, ...]
+            
+        Returns:
+            tuple: (effects_dict, color_keywords)
+                - effects_dict: {scene_id: {"display": str, "words": [...]}}
+                - color_keywords: {"#FFD700": ["keyword1", ...], ...}
+        """
+        script_lines = [f"{scene['scene_id']}. {scene['audio_text']}" for scene in scenes]
+        script_text = "\n".join(script_lines)
+        
+        prompt = SUBTITLE_EFFECT_PROMPT.format(script_text=script_text)
+        
+        try:
+            print(f"\n   🎨 [자막 효과 분석 중] AI가 어절별 효과를 판단합니다...")
+            self._increment_api_call("Subtitle Effect Analysis")
+            
+            response = self.client.models.generate_content(
+                model=TEXT_MODEL,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.3
+                )
+            )
+            
+            result_text = response.text
+            
+            json_match = re.search(r'\{[\s\S]*"scenes"[\s\S]*\}', result_text, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                effect_scenes = data.get('scenes', [])
+                color_keywords = data.get('color_keywords', {})
+                
+                result = {}
+                for es in effect_scenes:
+                    sid = es.get('scene_id')
+                    result[sid] = {
+                        'display': es.get('display', 'single'),
+                        'words': es.get('words', [])
+                    }
+                
+                total_effects = sum(
+                    1 for es in effect_scenes 
+                    for w in es.get('words', []) 
+                    if w.get('effect')
+                )
+                color_count = sum(len(v) for v in color_keywords.values())
+                print(f"   ✅ {len(effect_scenes)}개 장면, {total_effects}개 효과, {color_count}개 색상 키워드 지정 완료")
+                return result, color_keywords
+            else:
+                print(f"   ⚠️ JSON 파싱 실패, 기본값 사용")
+                return {}, {}
+                
+        except Exception as e:
+            print(f"   ⚠️ 자막 효과 분석 실패: {e}")
+            return {}, {}
 
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    generator = RecipeScriptGenerator()
-    # Test usage
-    # test_recipe = {
-    #     "title": "시금치무침",
-    #     "ingredients": [{"name": "시금치", "amount": "1단"}, {"name": "소금", "amount": "1/2스푼"}],
-    #     "steps": [{"step": 1, "description": "시금치를 깨끗이 씻어주세요"}]
-    # }
-    # script = generator.generate_script(test_recipe)
-    # print(script)
+
+# 파이프라인 호환을 위한 별칭 (제거 예정)
+RecipeScriptGenerator = ScriptGenerator

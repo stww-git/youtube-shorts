@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "sokpyeonhan"
+ACTIVE_CHANNEL = "money-bite"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -73,22 +73,27 @@ CHANNELS = {
     },
 
     "money-bite": {
-        "enabled": False,          # True: 스케줄 실행
-        "test_mode": False,        # True: 테스트 모드 (이미지 생성 생략)
+        "enabled": False,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
         "upload": False,          # True: YouTube 업로드
-        "privacy": "private",     # public / unlisted / private
-        "parallel": False,        # True: 이미지 병렬 생성
-        "tts_fallback": False,    # False: 실패 시 바로 종료
+        "privacy": "private",      # public / unlisted / private
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
-        "summary_card_duration": 2.0,
-        "summary_in_description": False,
-        "disclaimer": False,       # True: 영상 끝에 면책 조항 추가
+        "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
+        "typing_speed": 0.2,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
+        "single_font_size": 100, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
+        "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
+        "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
+        "ken_burns_effect": False,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
+        "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
+
+        "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
+        "parallel": False,        # True: 이미지 병렬 생성
+        "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
+        "disclaimer": False,      # True: 면책 조항 추가
         "bgm_enabled": False,     # True: 배경음악 사용
-        "bgm_volume": 0.1,
-        "bgm_file": None,
-        "subtitle_mode": "accumulate", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
-        "typing_speed": 0.3,
-        "tts_voice_name": "Kore",  # 영어: Aoede, Charon, Fenrir, Puck 등
+        "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
+        "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
     },
 
     "test-channel-trial1": {
