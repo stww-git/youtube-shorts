@@ -52,7 +52,7 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
+        "upload": True,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
         "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
