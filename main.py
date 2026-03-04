@@ -52,9 +52,8 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
+        "upload": True,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
-        "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
         "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
         "typing_speed": 0.3,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
         "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
@@ -64,8 +63,9 @@ CHANNELS = {
         "ken_burns_zoom": 0.1,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
+        "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
-        "show_title": True,      # True: 영상 상단에 제목 + 검은 배경 표시 / False: 제목 숨김
+        "show_title": True,      # True: 전체 영상 상단에 제목 + 검은 배경 표시 / False: 제목 숨김
         "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
         "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
         "parallel": False,        # True: 이미지 병렬 생성
@@ -92,7 +92,7 @@ CHANNELS = {
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
 
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
-        "show_title": True,      # True: 영상 상단에 제목 + 검은 배경 표시 / False: 제목 숨김
+        "show_title": True,      # True: 전체 영상 상단에 제목 + 검은 배경 표시 / False: 제목 숨김
         "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
         "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
         "parallel": False,        # True: 이미지 병렬 생성
