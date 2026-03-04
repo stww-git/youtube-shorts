@@ -60,6 +60,8 @@ CHANNELS = {
         "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
         "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
+        "ken_burns_effect": True,      # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
+        "ken_burns_zoom": 0.1,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
         "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
@@ -189,6 +191,8 @@ def main():
     single_font_size = channel_settings.get("single_font_size", 140)  # single 모드 폰트 크기
     static_font_size = channel_settings.get("static_font_size", 80)  # static 모드 폰트 크기
     ai_subtitle_effects = channel_settings.get("ai_subtitle_effects", False)  # AI 자막 효과
+    ken_burns_effect = channel_settings.get("ken_burns_effect", True)  # Ken Burns 줌 인 효과
+    ken_burns_zoom = channel_settings.get("ken_burns_zoom", 0.05)  # 줌 인 강도
     tts_voice_name = channel_settings.get("tts_voice_name", "Kore")  # TTS 음성
     
     if not channel_id:
@@ -244,7 +248,9 @@ def main():
                 single_font_size=single_font_size,
                 static_font_size=static_font_size,
                 ai_subtitle_effects=ai_subtitle_effects,
-                tts_voice_name=tts_voice_name
+                tts_voice_name=tts_voice_name,
+                ken_burns_effect=ken_burns_effect,
+                ken_burns_zoom=ken_burns_zoom
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(

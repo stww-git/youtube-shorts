@@ -33,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, color_keywords: dict = None):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, color_keywords: dict = None, ken_burns_effect: bool = True, ken_burns_zoom: float = 0.05):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -87,9 +87,12 @@ class MotionEffectsComposer:
                 
                 clip = None
                 
-                # Image files: Apply Ken Burns effect
+                # Image files: Apply Ken Burns effect or static
                 if asset_path.endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                    clip = self._apply_ken_burns_effect(asset_path, duration)
+                    if ken_burns_effect:
+                        clip = self._apply_ken_burns_effect(asset_path, duration, zoom_intensity=ken_burns_zoom)
+                    else:
+                        clip = self._apply_static_image(asset_path, duration)
                 else:
                     # Video files: Simple resize/crop
                     clip = VideoFileClip(asset_path)
@@ -358,10 +361,15 @@ class MotionEffectsComposer:
             print(f"{'='*50}\n")
             return None
 
-    def _apply_ken_burns_effect(self, image_path: str, duration: float):
+    def _apply_ken_burns_effect(self, image_path: str, duration: float, zoom_intensity: float = 0.05):
         """
         Applies Ken Burns (slow zoom) effect to a static image.
-        Creates a gentle zoom from 1.0x to 1.05x over the duration.
+        Creates a gentle zoom from 1.0x to (1.0 + zoom_intensity)x over the duration.
+        
+        Args:
+            image_path: Path to the image file
+            duration: Duration of the clip
+            zoom_intensity: Zoom strength (0.03=subtle, 0.05=normal, 0.10=strong)
         """
         # Load image clip
         img_clip = ImageClip(image_path)
@@ -402,11 +410,10 @@ class MotionEffectsComposer:
                 height=target_height
             )
         
-        # Apply subtle zoom effect (1.0 → 1.05 instead of 1.1)
-        # Smaller zoom = more image visible
+        # Apply zoom effect using configurable intensity
         def zoom_func(t):
             progress = min(t / duration, 1.0)  # Clamp to 0-1
-            return 1.0 + 0.05 * progress  # Zoom from 1.0x to 1.05x
+            return 1.0 + zoom_intensity * progress  # Zoom from 1.0x to (1.0 + zoom_intensity)x
         
         # Apply zoom - this will make the clip slightly larger
         zoomed = img_clip.resized(zoom_func)
@@ -424,6 +431,33 @@ class MotionEffectsComposer:
         final_clip = self._set_exact_duration(final_clip, duration)
         
         return final_clip
+    
+    def _apply_static_image(self, image_path: str, duration: float):
+        """
+        Loads a static image and fits it to 1080x1920 without any animation.
+        """
+        img_clip = ImageClip(image_path)
+        target_width, target_height = VIDEO_WIDTH, VIDEO_HEIGHT
+        
+        # Scale to fit
+        scale_h = target_height / img_clip.h
+        scale_w = target_width / img_clip.w
+        scale = max(scale_h, scale_w)
+        
+        new_height = int(img_clip.h * scale)
+        img_clip = img_clip.resized(height=new_height)
+        
+        # Crop to center
+        if img_clip.w > target_width or img_clip.h > target_height:
+            img_clip = img_clip.cropped(
+                x_center=img_clip.w / 2,
+                y_center=img_clip.h / 2,
+                width=target_width,
+                height=target_height
+            )
+        
+        img_clip = self._set_exact_duration(img_clip, duration)
+        return img_clip
     
     def _resize_clip(self, clip, duration: float):
         """Resize video clip to 9:16 format."""
@@ -696,12 +730,19 @@ class MotionEffectsComposer:
                     current_line_width = 0
                 
                 # Add word to current line
-                keyword_color = get_keyword_color(word, text_color) if not style.get('skip_keyword_color') else text_color
-                # Pop-in 하이라이트: skip_keyword_color가 아닐 때만
-                if not style.get('skip_keyword_color') and highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
-                    color = POPIN_HIGHLIGHT_COLOR
+                # word_color_func가 있으면 우선 사용 (Scene 6 전용 등)
+                word_color_func = style.get('word_color_func')
+                if word_color_func:
+                    color = word_color_func(word, text_color)
+                elif not style.get('skip_keyword_color'):
+                    keyword_color = get_keyword_color(word, text_color)
+                    # Pop-in 하이라이트: skip_keyword_color가 아닐 때만
+                    if highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
+                        color = POPIN_HIGHLIGHT_COLOR
+                    else:
+                        color = keyword_color
                 else:
-                    color = keyword_color
+                    color = text_color
                 word_counter += 1
                 current_line_words.append({
                     "text": word,
@@ -1001,18 +1042,25 @@ class MotionEffectsComposer:
             word_render_style = dict(render_style)
             word_render_style['max_width'] = 700  # 줄바꿈 유도 (좋아요 한 번만 / 눌러주세요)
             word_render_style['skip_keyword_color'] = True  # 기존 키워드 색상 비활성화
-            ai_color = self._get_ai_color(word_text, color_keywords)
-            if ai_color != 'white':
-                word_render_style['text_color'] = ai_color
+            
+            # Scene 6 전용 3색 매핑 (좋아요 CTA)
+            if '좋아요' in word_text:
+                from config.subtitle_config import get_scene6_word_color
+                word_render_style['word_color_func'] = get_scene6_word_color
+            else:
+                ai_color = self._get_ai_color(word_text, color_keywords)
+                if ai_color != 'white':
+                    word_render_style['text_color'] = ai_color
             
             img_path = self._create_subtitle_image(word_text, word_render_style)
             if img_path and os.path.exists(img_path):
                 sub_clip = ImageClip(img_path)
                 sub_clip = self._set_exact_duration(sub_clip, duration)
                 
-                # 효과 적용
+                # 효과 적용 (Scene 6은 2회 bounce)
                 if word_effect and duration >= 0.15:
-                    sub_clip = self._apply_word_effect(sub_clip, word_effect, duration)
+                    bounce_count = 2 if '좋아요' in word_text else 1
+                    sub_clip = self._apply_word_effect(sub_clip, word_effect, duration, bounce_count=bounce_count)
                 
                 try:
                     sub_clip = sub_clip.with_position(('center', SUBTITLE_Y_POSITION))
@@ -1081,23 +1129,26 @@ class MotionEffectsComposer:
             return CompositeVideoClip([clip] + animated_clips)
         return clip
     
-    def _apply_word_effect(self, clip, effect_type, clip_duration):
+    def _apply_word_effect(self, clip, effect_type, clip_duration, bounce_count=1):
         """어절 클립에 bounce 효과를 적용합니다."""
-        anim_duration = min(0.2, clip_duration * 0.4)
+        single_anim = min(0.2, clip_duration * 0.4)
+        anim_duration = single_anim * bounce_count  # 각 bounce에 충분한 시간 확보
         
         if effect_type == "bounce":
-            # 바운스 팝: 80% → 110% → 100%
-            def make_bounce_func(anim_dur):
+            # 바운스 팝: 80% → 110% → 100% (bounce_count회 반복)
+            def make_bounce_func(anim_dur, count):
                 def bounce_func(t):
-                    if t < anim_dur * 0.6:
-                        progress = t / (anim_dur * 0.6)
+                    single = anim_dur / count
+                    cycle_t = t % single if t < anim_dur else single
+                    if cycle_t < single * 0.6:
+                        progress = cycle_t / (single * 0.6)
                         return 0.8 + 0.3 * progress
-                    elif t < anim_dur:
-                        progress = (t - anim_dur * 0.6) / (anim_dur * 0.4)
+                    elif cycle_t < single:
+                        progress = (cycle_t - single * 0.6) / (single * 0.4)
                         return 1.1 - 0.1 * progress
                     return 1.0
                 return bounce_func
-            clip = clip.resized(make_bounce_func(anim_duration))
+            clip = clip.resized(make_bounce_func(anim_duration, bounce_count))
         
         return clip
 
