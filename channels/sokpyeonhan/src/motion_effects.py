@@ -180,10 +180,8 @@ class MotionEffectsComposer:
                 first_sentence = self._extract_first_sentence(video_title)
                 print(f"   📌 제목 추가 중: {first_sentence[:30]}...")
                 
-                # YouTube Shorts top margin: avoid overlapping with channel icon/follow button
-                TOP_MARGIN = 100
-                
-                from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, get_adaptive_title_style
+                from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, TITLE_TOP_MARGIN, TITLE_BG_TOP_MARGIN, get_adaptive_title_style
+                TOP_MARGIN = TITLE_BG_TOP_MARGIN  # 검은색 배경 높이 계산용
                 title_font = TITLE_FONT_PATH
                 title_text = first_sentence
                 
@@ -263,7 +261,7 @@ class MotionEffectsComposer:
                     bg_clip = bg_clip.set_position(('center', 0))
                 
                 # Position title (제목을 아래로 배치, 검은색 배경 내부에 유지)
-                text_y_position = TOP_MARGIN + 40
+                text_y_position = TITLE_TOP_MARGIN + 40
                 
                 try:
                     title_clip = title_clip.with_position(('center', text_y_position))
@@ -813,7 +811,8 @@ class MotionEffectsComposer:
         # 설정 파일에서 불러오기
         from config.summary_card_config import (
             CARD_DURATION, MAX_ITEMS, FONT_SIZE, LINE_SPACING,
-            TEXT_COLOR, TEXT_ALIGN, BG_IMAGE, BG_COLOR, FONT_FILE
+            TEXT_COLOR, TEXT_ALIGN, BG_IMAGE, BG_COLOR, FONT_FILE,
+            TEXT_STROKE_COLOR, TEXT_STROKE_WIDTH
         )
         
         if not checklist:
@@ -896,12 +895,15 @@ class MotionEffectsComposer:
             if font_size != FONT_SIZE:
                 print(f"      ℹ️ 폰트 크기 자동 조정: {FONT_SIZE} → {font_size}")
             
-            # 배경 이미지 로드
+            # 배경 이미지 로드 (VIDEO_WIDTH x VIDEO_HEIGHT로 리사이즈)
             if BG_IMAGE:
                 bg_image_path = Path(__file__).parent.parent / "assets" / BG_IMAGE
                 if bg_image_path.exists():
                     img = Image.open(str(bg_image_path)).convert('RGB')
+                    if img.size != (VIDEO_WIDTH, VIDEO_HEIGHT):
+                        img = img.resize((VIDEO_WIDTH, VIDEO_HEIGHT), Image.LANCZOS)
                 else:
+                    print(f"      ⚠️ 배경 이미지 없음: {bg_image_path}")
                     img = Image.new('RGB', (VIDEO_WIDTH, VIDEO_HEIGHT), BG_COLOR)
             else:
                 img = Image.new('RGB', (VIDEO_WIDTH, VIDEO_HEIGHT), BG_COLOR)
@@ -912,9 +914,13 @@ class MotionEffectsComposer:
             x = max(MARGIN_X, (VIDEO_WIDTH - text_width) / 2)
             y = (VIDEO_HEIGHT - text_height) / 2
             
-            # 텍스트 그리기
+            # 텍스트 그리기 (외곽선 포함)
+            stroke_kwargs = {}
+            if TEXT_STROKE_WIDTH > 0:
+                stroke_kwargs['stroke_width'] = TEXT_STROKE_WIDTH
+                stroke_kwargs['stroke_fill'] = TEXT_STROKE_COLOR
             draw.multiline_text((x, y), card_text, font=font, fill=TEXT_COLOR, 
-                               spacing=LINE_SPACING, align=TEXT_ALIGN)
+                               spacing=LINE_SPACING, align=TEXT_ALIGN, **stroke_kwargs)
             
             # 임시 파일로 저장
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:

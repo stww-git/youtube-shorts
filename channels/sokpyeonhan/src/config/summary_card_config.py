@@ -26,8 +26,12 @@ FONT_SIZE = 70
 # 줄 간격 (픽셀)
 LINE_SPACING = 35
 
-# 글자 색상
-TEXT_COLOR = "white"
+# 글자 색상 (밝은 배경이므로 어두운 색상 사용)
+TEXT_COLOR = "#3E2723"  # 다크 브라운 (따뜻한 느낌, 요리 채널에 적합)
+
+# 텍스트 외곽선 (밝은 배경에서 가독성 확보)
+TEXT_STROKE_COLOR = "#FFFFFF"  # 흰색 외곽선
+TEXT_STROKE_WIDTH = 3          # 외곽선 두께 (0이면 외곽선 없음)
 
 # 정렬 방식: 'left', 'center', 'right'
 TEXT_ALIGN = "left"
@@ -37,13 +41,13 @@ TEXT_ALIGN = "left"
 # 🖼️ 배경 설정
 # ===========================================
 
-# 배경 이미지 파일명 (assets 폴더 내)
+# 배경 이미지 파일명 (assets/summary_card_backgrounds/ 폴더 내)
 # None으로 설정하면 BG_COLOR 사용
-BG_IMAGE = "black_background.png"
+BG_IMAGE = "summary_card_backgrounds/kitchen_background.png"
 
 # 배경 색상 (배경 이미지가 없을 때 사용)
 # RGB 튜플: (R, G, B)
-BG_COLOR = (0, 0, 0)  # 검정
+BG_COLOR = (245, 240, 235)  # 따뜻한 아이보리 (이미지 없을 때 대체)
 
 
 # ===========================================
@@ -53,3 +57,4 @@ BG_COLOR = (0, 0, 0)  # 검정
 # 폰트 파일명 (fonts 폴더 내)
 # None으로 설정하면 시스템 기본 폰트 사용
 FONT_FILE = "nanumsquare/NanumSquareB.ttf"
+

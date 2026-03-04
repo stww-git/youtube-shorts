@@ -31,7 +31,8 @@ TITLE_LETTER_SPACING = 0
 TITLE_MAX_WIDTH = 800     # 최대 너비
 TITLE_LINE_HEIGHT = 1.0   # 줄간격 배수 (1.0 = 빼곡하게)
 
-TITLE_TOP_MARGIN = 100
+TITLE_TOP_MARGIN = 110     # 제목 텍스트 Y 위치 (제목만 이동)
+TITLE_BG_TOP_MARGIN = 100  # 검은색 배경 높이 계산용 (배경 크기 조절)
 
 # ============================================
 # 적응형 폰트 크기 설정 (Adaptive Font Sizing)
