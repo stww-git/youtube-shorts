@@ -33,7 +33,7 @@ class MotionEffectsComposer:
             # Simple font detection: Check for Korean font availability
             self.font = "AppleGothic" if os.path.exists("/System/Library/Fonts/Supplemental/AppleGothic.ttf") else "Arial"
 
-    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, color_keywords: dict = None, ken_burns_effect: bool = True):
+    def compose_video(self, scenes: List[Dict], audio_path: str = None, output_path: str = None, video_title: str = None, summary_checklist: list = None, summary_title: str = "", summary_card_duration: float = 3.0, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, color_keywords: dict = None, ken_burns_effect: bool = True, ken_burns_zoom: float = 0.05, summary_card_show_title: bool = True):
         """
         Composes final video from scene images with motion effects and subtitles.
         Supports both unified audio (legacy) and per-scene audio (new).
@@ -90,7 +90,7 @@ class MotionEffectsComposer:
                 # Image files: Apply Ken Burns effect
                 if asset_path.endswith(('.png', '.jpg', '.jpeg', '.webp')):
                     if ken_burns_effect:
-                        clip = self._apply_ken_burns_effect(asset_path, duration)
+                        clip = self._apply_ken_burns_effect(asset_path, duration, zoom_intensity=ken_burns_zoom)
                     else:
                         clip = self._apply_static_image(asset_path, duration)
                 else:
@@ -166,113 +166,33 @@ class MotionEffectsComposer:
             final_video = concatenate_videoclips(clips, method="compose")
             print(f"   ✅ 최종 비디오 길이: {final_video.duration:.2f}초\n")
             
-            # === Summary Card (핵심 정보 카드) ===
-            if summary_checklist:
-                print(f"   📋 핵심 정보 카드 추가 중...")
-                summary_card = self._create_summary_card(summary_checklist, duration=summary_card_duration)
-                if summary_card:
-                    final_video = concatenate_videoclips([final_video, summary_card], method="compose")
-                    print(f"   ✅ 핵심 카드 추가 완료 (최종 길이: {final_video.duration:.2f}초)")
+            # === Title + Summary Card 순서 제어 ===
+            # summary_card_show_title=False: 제목을 먼저 씌우고 → 핵심 카드를 뒤에 붙임 (카드에 제목 없음)
+            # summary_card_show_title=True:  핵심 카드를 먼저 붙이고 → 제목을 전체에 씌움 (카드에도 제목 있음)
             
-            # Ensure no duplicate audio: if per_scene_audio, each clip already has audio
-            # Don't add overall audio again
-            
-            # Add title overlay to entire video if provided
-            if video_title:
-                # Extract first sentence only
-                first_sentence = self._extract_first_sentence(video_title)
-                print(f"   📌 제목 추가 중: {first_sentence[:30]}...")
+            if not summary_card_show_title and video_title:
+                # 제목을 먼저 본편에만 적용
+                final_video = self._apply_title_overlay(final_video, video_title)
                 
-                from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, TITLE_TOP_MARGIN, TITLE_BG_TOP_MARGIN, get_adaptive_title_style
-                TOP_MARGIN = TITLE_BG_TOP_MARGIN  # 검은색 배경 높이 계산용
-                title_font = TITLE_FONT_PATH
-                title_text = first_sentence
+                # 그 다음 핵심 정보 카드 추가 (제목 없이)
+                if summary_checklist:
+                    print(f"   📋 핵심 정보 카드 추가 중...")
+                    summary_card = self._create_summary_card(summary_checklist, duration=summary_card_duration, summary_title=summary_title)
+                    if summary_card:
+                        final_video = concatenate_videoclips([final_video, summary_card], method="compose")
+                        print(f"   ✅ 핵심 카드 추가 완료 (최종 길이: {final_video.duration:.2f}초)")
+            else:
+                # 핵심 정보 카드 먼저 추가
+                if summary_checklist:
+                    print(f"   📋 핵심 정보 카드 추가 중...")
+                    summary_card = self._create_summary_card(summary_checklist, duration=summary_card_duration, summary_title=summary_title)
+                    if summary_card:
+                        final_video = concatenate_videoclips([final_video, summary_card], method="compose")
+                        print(f"   ✅ 핵심 카드 추가 완료 (최종 길이: {final_video.duration:.2f}초)")
                 
-                # Adaptive Font Sizing
-                font_size, line_height_factor = get_adaptive_title_style(len(title_text))
-                
-                # === NEW: Pillow-based title generation (tight letter spacing) ===
-                use_pillow_title = True  # Set to False to use old TextClip method
-                
-                if use_pillow_title:
-                    try:
-                        # Create title image with customized line colors (from config)
-                        title_image_path = create_title_image(
-                            text=title_text,
-                            font_size=font_size,
-                            font_path=title_font,
-                            line_colors=TITLE_LINE_COLORS
-                        )
-                        
-                        # Load as ImageClip
-                        title_clip = ImageClip(title_image_path)
-                        # Fix: Use _set_exact_duration for compatibility
-                        title_clip = self._set_exact_duration(title_clip, final_video.duration)
-                        
-                        # Get actual image dimensions for background
-                        from PIL import Image as PILImage
-                        with PILImage.open(title_image_path) as img:
-                            title_img_height = img.height
-                        
-                        print(f"      🎨 Pillow 방식 사용 (자간: -5px)")
-                        
-                    except Exception as e:
-                        logger.warning(f"Pillow title failed: {e}. Falling back to TextClip.")
-                        use_pillow_title = False
-                
-                if not use_pillow_title:
-                    # OLD METHOD: TextClip (wide letter spacing)
-                    title_clip = TextClip(
-                        text=title_text,
-                        font_size=font_size,
-                        color='white',
-                        font=title_font,
-                        stroke_color='black',
-                        stroke_width=5,
-                        size=(900, None),
-                        method='caption',
-                        text_align='center',
-                        duration=final_video.duration
-                    )
-                    title_img_height = None  # Will use estimate
-                    print(f"      📝 TextClip 방식 사용 (기본 자간)")
-                
-                # Calculate background height
-                if use_pillow_title and title_img_height:
-                    bg_height = int(TOP_MARGIN + title_img_height + 80)
-                else:
-                    avg_chars_per_line = 10
-                    num_lines = max(1, (len(title_text) + avg_chars_per_line - 1) // avg_chars_per_line)
-                    line_height = int(font_size * line_height_factor)
-                    text_height = num_lines * line_height
-                    bg_height = int(TOP_MARGIN + text_height + 80)
-                
-                bg_height = max(bg_height, 220)
-                bg_width = VIDEO_WIDTH
-                
-                print(f"      📐 제목 배경: 높이 {bg_height}px, 폰트 {font_size}px")
-                
-                bg_clip = ColorClip(
-                    size=(bg_width, bg_height),
-                    color=(0, 0, 0),
-                    duration=final_video.duration
-                )
-                
-                try:
-                    bg_clip = bg_clip.with_position(('center', 0))
-                except AttributeError:
-                    bg_clip = bg_clip.set_position(('center', 0))
-                
-                # Position title (제목을 아래로 배치, 검은색 배경 내부에 유지)
-                text_y_position = TITLE_TOP_MARGIN + 40
-                
-                try:
-                    title_clip = title_clip.with_position(('center', text_y_position))
-                except AttributeError:
-                    title_clip = title_clip.set_position(('center', text_y_position))
-                
-                final_video = CompositeVideoClip([final_video, bg_clip, title_clip])
-                print(f"   ✅ 제목 추가 완료 (검정 배경 포함)\n")
+                # 그 다음 제목 오버레이 (전체에 적용)
+                if video_title:
+                    final_video = self._apply_title_overlay(final_video, video_title)
             
             # Add unified audio if not using per-scene audio
             if not per_scene_audio and full_audio:
@@ -361,10 +281,15 @@ class MotionEffectsComposer:
             print(f"{'='*50}\n")
             return None
 
-    def _apply_ken_burns_effect(self, image_path: str, duration: float):
+    def _apply_ken_burns_effect(self, image_path: str, duration: float, zoom_intensity: float = 0.05):
         """
         Applies Ken Burns (slow zoom) effect to a static image.
-        Creates a gentle zoom from 1.0x to 1.05x over the duration.
+        Creates a gentle zoom from 1.0x to (1.0 + zoom_intensity)x over the duration.
+        
+        Args:
+            image_path: Path to the image file
+            duration: Duration of the clip
+            zoom_intensity: Zoom strength (0.03=subtle, 0.05=normal, 0.10=strong)
         """
         # Load image clip
         img_clip = ImageClip(image_path)
@@ -405,11 +330,10 @@ class MotionEffectsComposer:
                 height=target_height
             )
         
-        # Apply subtle zoom effect (1.0 → 1.05 instead of 1.1)
-        # Smaller zoom = more image visible
+        # Apply zoom effect using configurable intensity
         def zoom_func(t):
             progress = min(t / duration, 1.0)  # Clamp to 0-1
-            return 1.0 + 0.05 * progress  # Zoom from 1.0x to 1.05x
+            return 1.0 + zoom_intensity * progress  # Zoom from 1.0x to (1.0 + zoom_intensity)x
         
         # Apply zoom - this will make the clip slightly larger
         zoomed = img_clip.resized(zoom_func)
@@ -827,7 +751,96 @@ class MotionEffectsComposer:
             logger.error(f"Failed to create subtitle image: {e}")
             return None
 
-    def _create_summary_card(self, checklist: list, duration: float = None):
+    def _apply_title_overlay(self, final_video, video_title):
+        """영상 위에 제목 텍스트 + 검은 배경 오버레이를 추가합니다."""
+        first_sentence = self._extract_first_sentence(video_title)
+        print(f"   📌 제목 추가 중: {first_sentence[:30]}...")
+        
+        from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, TITLE_TOP_MARGIN, TITLE_BG_TOP_MARGIN, get_adaptive_title_style
+        TOP_MARGIN = TITLE_BG_TOP_MARGIN
+        title_font = TITLE_FONT_PATH
+        title_text = first_sentence
+        
+        font_size, line_height_factor = get_adaptive_title_style(len(title_text))
+        
+        use_pillow_title = True
+        
+        if use_pillow_title:
+            try:
+                title_image_path = create_title_image(
+                    text=title_text,
+                    font_size=font_size,
+                    font_path=title_font,
+                    line_colors=TITLE_LINE_COLORS
+                )
+                
+                title_clip = ImageClip(title_image_path)
+                title_clip = self._set_exact_duration(title_clip, final_video.duration)
+                
+                from PIL import Image as PILImage
+                with PILImage.open(title_image_path) as img:
+                    title_img_height = img.height
+                
+                print(f"      🎨 Pillow 방식 사용 (자간: -5px)")
+                
+            except Exception as e:
+                logger.warning(f"Pillow title failed: {e}. Falling back to TextClip.")
+                use_pillow_title = False
+        
+        if not use_pillow_title:
+            title_clip = TextClip(
+                text=title_text,
+                font_size=font_size,
+                color='white',
+                font=title_font,
+                stroke_color='black',
+                stroke_width=5,
+                size=(900, None),
+                method='caption',
+                text_align='center',
+                duration=final_video.duration
+            )
+            title_img_height = None
+            print(f"      📝 TextClip 방식 사용 (기본 자간)")
+        
+        if use_pillow_title and title_img_height:
+            bg_height = int(TOP_MARGIN + title_img_height + 80)
+        else:
+            avg_chars_per_line = 10
+            num_lines = max(1, (len(title_text) + avg_chars_per_line - 1) // avg_chars_per_line)
+            line_height = int(font_size * line_height_factor)
+            text_height = num_lines * line_height
+            bg_height = int(TOP_MARGIN + text_height + 80)
+        
+        bg_height = max(bg_height, 220)
+        bg_width = VIDEO_WIDTH
+        
+        print(f"      📐 제목 배경: 높이 {bg_height}px, 폰트 {font_size}px")
+        
+        bg_clip = ColorClip(
+            size=(bg_width, bg_height),
+            color=(0, 0, 0),
+            duration=final_video.duration
+        )
+        
+        try:
+            bg_clip = bg_clip.with_position(('center', 0))
+        except AttributeError:
+            bg_clip = bg_clip.set_position(('center', 0))
+        
+        text_y_position = TITLE_TOP_MARGIN + 40
+        
+        try:
+            title_clip = title_clip.with_position(('center', text_y_position))
+        except AttributeError:
+            title_clip = title_clip.set_position(('center', text_y_position))
+        
+        final_video = CompositeVideoClip([final_video, bg_clip, title_clip])
+        print(f"   ✅ 제목 추가 완료 (검정 배경 포함)\n")
+        
+        return final_video
+
+    def _create_summary_card(self, checklist: list, duration: float = None, summary_title: str = ""):
         """
         핵심 정보 카드를 생성합니다 (영상 끝에 붙일 독립 클립).
         
@@ -940,9 +953,37 @@ class MotionEffectsComposer:
             
             draw = ImageDraw.Draw(img)
             
-            # 중앙 정렬 (좌우 여백 보장)
+            # === 제목 렌더링 ===
+            title_height = 0
+            TITLE_BOTTOM_MARGIN = 30  # 제목과 체크리스트 사이 여백
+            if summary_title:
+                title_font_size = int(font_size * 1.3)  # 체크리스트보다 30% 큰 폰트
+                title_font = _load_font(title_font_size)
+                
+                # 제목 텍스트 크기 계산
+                title_bbox = draw.textbbox((0, 0), summary_title, font=title_font)
+                title_text_width = title_bbox[2] - title_bbox[0]
+                title_text_height = title_bbox[3] - title_bbox[1]
+                title_height = title_text_height + TITLE_BOTTOM_MARGIN
+                
+                # 제목 중앙 배치
+                title_x = max(MARGIN_X, (VIDEO_WIDTH - title_text_width) / 2)
+                title_y = max(40, (VIDEO_HEIGHT - text_height - title_height) / 2)
+                
+                # 제목 그리기
+                title_stroke = {}
+                if TEXT_STROKE_WIDTH > 0:
+                    title_stroke['stroke_width'] = TEXT_STROKE_WIDTH + 1
+                    title_stroke['stroke_fill'] = TEXT_STROKE_COLOR
+                draw.text((title_x, title_y), summary_title, font=title_font, fill="#FFFFFF", **title_stroke)
+                print(f"      📌 카드 제목: {summary_title}")
+            
+            # 중앙 정렬 (좌우 여백 보장) - 제목 높이만큼 아래로
             x = max(MARGIN_X, (VIDEO_WIDTH - text_width) / 2)
-            y = (VIDEO_HEIGHT - text_height) / 2
+            if summary_title:
+                y = title_y + title_height
+            else:
+                y = (VIDEO_HEIGHT - text_height) / 2
             
             # 텍스트 그리기 (외곽선 포함)
             stroke_kwargs = {}

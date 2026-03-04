@@ -64,7 +64,8 @@ class ImageGenerator:
             model=IMAGE_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"]
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(aspect_ratio="9:16")
             )
         )
         

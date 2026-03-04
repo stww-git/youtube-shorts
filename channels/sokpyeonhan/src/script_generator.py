@@ -184,16 +184,16 @@ class RecipeScriptGenerator:
                     print(f"{'❌'*25}\n")
                     return None
 
-    def generate_summary(self, article_content: str, kick: str = "") -> list:
+    def generate_summary(self, article_content: str, kick: str = "") -> dict:
         """
-        레시피에서 핵심 체크리스트를 추출합니다.
+        레시피에서 카드 제목과 핵심 체크리스트를 추출합니다.
         
         Args:
             article_content: 레시피 정보 (조리 단계 등)
             kick: 대본 Scene 7에서 강조한 핵심 비법
             
         Returns:
-            체크리스트 문자열 리스트 (예: ["• 간장 2큰술", ...])
+            dict: {"summary_title": "...", "checklist": [...]}
         """
         prompt = SUMMARY_GENERATION_PROMPT.format(
             article_content=article_content[:3000],  # 토큰 제한
@@ -203,7 +203,7 @@ class RecipeScriptGenerator:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 if attempt == 1:
-                    print(f"\n   📝 [핵심 정보 카드] 체크리스트 추출 중...")
+                    print(f"\n   📝 [핵심 정보 카드] 제목 + 체크리스트 추출 중...")
                 else:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                 
@@ -224,12 +224,14 @@ class RecipeScriptGenerator:
                 json_match = re.search(r'\{[\s\S]*\}', text)
                 if json_match:
                     data = json.loads(json_match.group())
+                    summary_title = data.get('summary_title', '')
                     checklist = data.get('checklist', [])
+                    print(f"   ✅ 카드 제목: {summary_title}")
                     print(f"   ✅ 체크리스트 {len(checklist)}개 추출 완료")
-                    return checklist
+                    return {"summary_title": summary_title, "checklist": checklist}
                 else:
-                    print(f"   ⚠️ JSON 파싱 실패, 빈 리스트 반환")
-                    return []
+                    print(f"   ⚠️ JSON 파싱 실패, 빈 데이터 반환")
+                    return {"summary_title": "", "checklist": []}
                     
             except Exception as e:
                 if attempt < MAX_RETRIES:
@@ -237,9 +239,9 @@ class RecipeScriptGenerator:
                     time.sleep(RETRY_DELAY)
                 else:
                     print(f"   ❌ 요약 생성 최종 실패: {e}")
-                    return []
+                    return {"summary_title": "", "checklist": []}
         
-        return []
+        return {"summary_title": "", "checklist": []}
 
     def generate_subtitle_effects(self, scenes: list) -> tuple:
         """

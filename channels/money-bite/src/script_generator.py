@@ -107,9 +107,12 @@ class ScriptGenerator:
                     print(f"{'❌'*25}")
                     return None
 
-    def generate_summary(self, article_content: str) -> list:
+    def generate_summary(self, article_content: str) -> dict:
         """
-        금융 용어 설명에서 핵심 체크리스트를 추출합니다.
+        금융 용어 설명에서 카드 제목과 핵심 체크리스트를 추출합니다.
+        
+        Returns:
+            dict: {"summary_title": "...", "checklist": [...]}
         """
         prompt = SUMMARY_GENERATION_PROMPT.format(
             article_content=article_content[:3000]
@@ -118,7 +121,7 @@ class ScriptGenerator:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 if attempt == 1:
-                    print(f"\n   📝 [핵심 정보 카드] 체크리스트 추출 중...")
+                    print(f"\n   📝 [핵심 정보 카드] 제목 + 체크리스트 추출 중...")
                 else:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                 
@@ -135,12 +138,14 @@ class ScriptGenerator:
                 json_match = re.search(r'\{[\s\S]*\}', text)
                 if json_match:
                     data = json.loads(json_match.group())
+                    summary_title = data.get('summary_title', '')
                     checklist = data.get('checklist', [])
+                    print(f"   ✅ 카드 제목: {summary_title}")
                     print(f"   ✅ 체크리스트 {len(checklist)}개 추출 완료")
-                    return checklist
+                    return {"summary_title": summary_title, "checklist": checklist}
                 else:
-                    print(f"   ⚠️ JSON 파싱 실패, 빈 리스트 반환")
-                    return []
+                    print(f"   ⚠️ JSON 파싱 실패, 빈 데이터 반환")
+                    return {"summary_title": "", "checklist": []}
                     
             except Exception as e:
                 if attempt < MAX_RETRIES:
@@ -148,9 +153,9 @@ class ScriptGenerator:
                     time.sleep(RETRY_DELAY)
                 else:
                     print(f"   ❌ 요약 생성 최종 실패: {e}")
-                    return []
+                    return {"summary_title": "", "checklist": []}
         
-        return []
+        return {"summary_title": "", "checklist": []}
 
     def generate_subtitle_effects(self, scenes: list) -> tuple:
         """

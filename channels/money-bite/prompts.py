@@ -123,7 +123,7 @@ TITLE_GENERATION_PROMPT = """
 # ============================================
 IMAGE_GENERATION_PROMPT = """
 너는 금융 유튜브 쇼츠용 이미지 프롬프트 작성 전문가다.
-각 장면의 문장(나레이션)과 100% 연관된 직관적인 2D 인포그래픽/플랫 일러스트 프롬프트를 작성해라.
+각 장면의 문장(나레이션)과 100% 연관된 Kurzgesagt 스타일의 2D 만화/일러스트 프롬프트를 작성해라.
 설명이나 부연은 출력하지 말고 JSON만 출력해라.
 
 [제목]
@@ -134,35 +134,34 @@ IMAGE_GENERATION_PROMPT = """
 
 [작업 지시]
 1. 각 장면(scene)의 나레이션 문장을 정확히 읽고, 그 문장이 말하고자 하는 의미나 비유를 파악해라.
-2. 각 문장의 스토리를 가장 잘 대변하고 시각적으로 설명해 줄 수 있는 핵심 오브젝트 1개를 선정해라.
-3. 선정된 오브젝트를 심플하고 직관적인 2D 형태의 인포그래픽 아이템으로 묘사하는 영어 프롬프트를 생성해라.
+2. 각 문장의 내용을 가장 잘 보여주는 한 장면의 만화/일러스트 컷을 구상해라. 
+3. 장면을 이 컨셉 아트 스타일로 묘사하는 영어 프롬프트를 생성해라.
 
-[핵심 원칙: 문장과의 높은 연관성]
-- 이전/다음 장면과 상관없이, **해당 장면 문장만의 핵심 내용**을 시각화하는 데 집중해라.
-- 대본에 비유가 있다면 그 비유를 우선적으로 시각화 (예: "가격표" → 2D 가격표 아이콘, "월급" → 지폐가 든 플랫 봉투 아이콘)
-- 추상적인 개념이라면 가장 직관적인 물질적 상징물(아이템)로 변환해라.
-- 각 장면당 메인 오브젝트 1개만 배치 (복잡한 구조, 복잡한 다이어그램, 복잡한 차트 금지)
+[핵심 원칙: 단순하고 명확한 스토리텔링]
+- 대본에 비유가 있다면 그 비유를 우선적으로 시각화해라.
+- 너무 많은 요소가 들어간 복잡한 그림은 피하고, 1~3명의 주요 캐릭터와 핵심 배경으로만 화면을 구성해라.
 
-[스타일]
-- modern 2D infographic flat design style, clean corporate vector art
-- 배경: 딥 네이비(#1a1a2e) 단색 배경
-- 오브젝트 색상: 골드(#FFD700), 에메랄드 그린(#2ecc71), 스카이 블루(#3498db) 중 문장 분위기에 맞는 색상 활용
-- 고해상도, 깔끔한 선과 솔리드한 색면, 미니멀리즘
-- 오브젝트를 화면 중앙에 크게 배치
+[스타일: 2D Cartoon / Flat Vector Illustration]
+- Style of Kurzgesagt or Oversimplified YouTube channels.
+- Simple 2D cartoon / vector illustration style.
+- Thick, very clear, clean, and bold black outlines for all characters and objects.
+- Flat, solid colors. NO gradients, NO complex shading, NO 3D rendering, NO realism.
+- Characters: Extremely simple cartoon figures (e.g., round white faces, simple dot expressions, single-color suits/shirts).
+- Backgrounds: Detail-oriented but stylized 2D drawing (e.g., control rooms, maps, charts on screens) heavily using thick black line-art.
+- Color palette: Slightly muted but distinct colors (deep blues, greys, bright oranges, greens, reds).
 
 [금지 사항]
-- Text, Letters, Words, Numbers, watermark, labels (절대 금지)
-- 잡다하고 복잡한 요소 추가 (단일 오브젝트에 집중할 것)
-- 사람 얼굴, 브랜드 로고, 만화 캐릭터
-- 사실적인 사진 스타일이나 3D 렌더링 스타일 (절대 금지)
+- Text, Letters, Words, Numbers, Speech Bubbles (절대 금지. 어떤 글자표시도 넣지 마라)
+- 사실적인 사진 스타일, 3D 렌더링 스타일, 수채화, 실사 인물 (절대 금지)
+- 그라데이션, 리얼한 명암 (절대 금지)
 
 ## 출력 형식 (JSON)
 대본의 scene 수에 맞춰 동일한 수의 이미지 프롬프트를 생성해라
 {{
-    "global_visual_style": "[통합 스타일 - 영어로 한 문장]",
+    "global_visual_style": "Simple 2D cartoon vector illustration in the style of Kurzgesagt, thick black outlines, flat solid colors, no gradients",
     "scenes": [
-        {{"scene_id": 1, "visual_description": "[영어 프롬프트 - 해당 문장과 연관된 단일 2D 인포그래픽 오브젝트]"}},
-        {{"scene_id": 2, "visual_description": "[영어 프롬프트 - 해당 문장과 연관된 단일 2D 인포그래픽 오브젝트]"}},
+        {{"scene_id": 1, "visual_description": "[영어 프롬프트 - 해당 문장을 시각화한 2D 만화 장면. 캐릭터, 배경, 핵심 소품 묘사]"}},
+        {{"scene_id": 2, "visual_description": "[영어 프롬프트 - 해당 문장을 시각화한 2D 만화 장면. 캐릭터, 배경, 핵심 소품 묘사]"}},
         ...
     ]
 }}
@@ -174,21 +173,23 @@ IMAGE_GENERATION_PROMPT = """
 # ============================================================
 SUMMARY_GENERATION_PROMPT = """
 당신은 금융 교육 요약 전문가입니다.
-아래 주제 정보를 읽고, 시청자가 메모할 만한 **핵심 포인트**를 4~5개 추출해주세요.
+아래 주제 정보를 읽고, 카드 제목과 시청자가 메모할 만한 **핵심 포인트**를 4~5개 추출해주세요.
 
 [주제 정보]
 {article_content}
 
 [추출 규칙]
-1. **번호 목록 형식**: "1. [짧은 문장]" 형태로 작성 (숫자 + 마침표 + 공백)
-2. **핵심 팁만**: 가장 중요한 금융 포인트
-3. **한 줄에 15자 이내**: 짧고 간결하게 (한국어 기준)
-4. **숫자/수치 포함**: 구체적인 수치가 있으면 포함
-5. **4~5개만**: 너무 많으면 안 됨
-6. **한국어로 작성**
+1. **카드 제목**: 용어 + "핵심 정리" 형태 (예: "PER 핵심 정리", "금리 핵심 정리")
+2. **번호 목록 형식**: "1. [짧은 문장]" 형태로 작성 (숫자 + 마침표 + 공백)
+3. **핵심 팁만**: 가장 중요한 금융 포인트
+4. **한 줄에 15자 이내**: 짧고 간결하게 (한국어 기준)
+5. **숫자/수치 포함**: 구체적인 수치가 있으면 포함
+6. **4~5개만**: 너무 많으면 안 됨
+7. **한국어로 작성**
 
 [출력 형식 - JSON]
 {{
+    "summary_title": "PER 핵심 정리",
     "checklist": [
         "1. 인덱스 펀드부터 시작하세요",
         "2. 매주 1만원 이상 투자하세요",

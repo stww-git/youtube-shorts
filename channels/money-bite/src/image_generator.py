@@ -24,7 +24,7 @@ class ImageGenerator:
         if not self.api_key:
             logger.warning("GOOGLE_API_KEY not found.")
         self.client = genai.Client(api_key=self.api_key) if self.api_key else None
-        self.style_guide = "high quality, cinematic lighting, 9:16 aspect ratio vertical, consistent visual style"
+        self.style_guide = "simple 2D cartoon, flat colors, thick black outlines, 9:16 aspect ratio vertical, consistent visual style, no text"
         
         # 모델 타입 자동 감지
         self.use_imagen = "imagen" in IMAGE_MODEL.lower()
@@ -64,7 +64,8 @@ class ImageGenerator:
             model=IMAGE_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"]
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(aspect_ratio="9:16")
             )
         )
         
