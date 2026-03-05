@@ -1,4 +1,17 @@
 {
-    "used_recipes": [],
-    "last_updated": null
+  "used_recipes": [
+    {
+      "term": "주식이란?",
+      "video_title": "주식은 떡볶이 가게 주인 권리입니다",
+      "used_at": "2026-03-05T05:12:24.346832"
+    }
+  ],
+  "last_updated": null,
+  "used_topics": [
+    {
+      "term": "주식이란?",
+      "video_title": "주식은 떡볶이 가게 주인 권리입니다",
+      "used_at": "2026-03-05T05:12:24.346832"
+    }
+  ]
 }
