@@ -2,7 +2,7 @@ import os
 import logging
 import tempfile
 from pathlib import Path
-from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ImageClip, ColorClip
+from moviepy import VideoFileClip, VideoClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ImageClip, ColorClip
 from moviepy.audio.AudioClip import concatenate_audioclips, CompositeAudioClip
 from typing import List, Dict
 from PIL import Image, ImageDraw, ImageFont
@@ -285,70 +285,65 @@ class MotionEffectsComposer:
         """
         Applies Ken Burns (slow zoom) effect to a static image.
         Creates a gentle zoom from 1.0x to (1.0 + zoom_intensity)x over the duration.
+        Zoom center is always the image center.
         
         Args:
             image_path: Path to the image file
             duration: Duration of the clip
             zoom_intensity: Zoom strength (0.03=subtle, 0.05=normal, 0.10=strong)
         """
-        # Load image clip
-        img_clip = ImageClip(image_path)
+        import numpy as np
+        from PIL import Image as PILImg
         
-        # Target size for vertical video (9:16 ratio)
         target_width, target_height = VIDEO_WIDTH, VIDEO_HEIGHT
         
-        # First, ensure the image is at least 1080x1920
-        # Scale UP if needed (important for Ken Burns effect to work properly)
-        if img_clip.h < target_height or img_clip.w < target_width:
-            scale_h = target_height / img_clip.h if img_clip.h < target_height else 1
-            scale_w = target_width / img_clip.w if img_clip.w < target_width else 1
-            scale = max(scale_h, scale_w) * 1.15  # Scale up 15% extra for zoom room
-            
-            new_height = int(img_clip.h * scale)
-            img_clip = img_clip.resized(height=new_height)
+        # Load and resize image to target size
+        pil_img = PILImg.open(image_path).convert('RGB')
         
-        # If image is already large, just ensure we have room for zoom
-        elif img_clip.w / img_clip.h < (target_width / target_height):
-            # Image is taller/narrower - fit to width with extra room
-            scale = (target_width * 1.15) / img_clip.w
-            new_height = int(img_clip.h * scale)
-            img_clip = img_clip.resized(height=new_height)
+        # Fit to target while maintaining aspect ratio (cover mode)
+        img_ratio = pil_img.width / pil_img.height
+        target_ratio = target_width / target_height
+        
+        if img_ratio > target_ratio:
+            # Image is wider - fit to height
+            new_h = target_height
+            new_w = int(new_h * img_ratio)
         else:
-            # Image is wider - fit to height with extra room
-            scale = (target_height * 1.15) / img_clip.h
-            new_height = int(img_clip.h * scale)
-            img_clip = img_clip.resized(height=new_height)
+            # Image is taller - fit to width
+            new_w = target_width
+            new_h = int(new_w / img_ratio)
         
-        # Now crop to center at 1080x1920 (this is our starting frame)
-        if img_clip.w > target_width or img_clip.h > target_height:
-            x_center = img_clip.w / 2
-            y_center = img_clip.h / 2
-            img_clip = img_clip.cropped(
-                x_center=x_center, 
-                y_center=y_center,
-                width=target_width, 
-                height=target_height
-            )
+        pil_img = pil_img.resize((new_w, new_h), PILImg.LANCZOS)
         
-        # Apply zoom effect using configurable intensity
+        # Center crop to exact target size
+        left = (new_w - target_width) // 2
+        top = (new_h - target_height) // 2
+        pil_img = pil_img.crop((left, top, left + target_width, top + target_height))
+        
+        base_frame = np.array(pil_img)
+        
         def zoom_func(t):
-            progress = min(t / duration, 1.0)  # Clamp to 0-1
-            return 1.0 + zoom_intensity * progress  # Zoom from 1.0x to (1.0 + zoom_intensity)x
+            progress = min(t / duration, 1.0)
+            return 1.0 + zoom_intensity * progress
         
-        # Apply zoom - this will make the clip slightly larger
-        zoomed = img_clip.resized(zoom_func)
+        def make_frame(t):
+            z = zoom_func(t)
+            if z <= 1.001:
+                return base_frame
+            
+            # Scale up
+            new_w = int(target_width * z)
+            new_h = int(target_height * z)
+            scaled = np.array(
+                PILImg.fromarray(base_frame).resize((new_w, new_h), PILImg.LANCZOS)
+            )
+            
+            # Center crop back to target size
+            x1 = (new_w - target_width) // 2
+            y1 = (new_h - target_height) // 2
+            return scaled[y1:y1 + target_height, x1:x1 + target_width]
         
-        # Crop back to 1080x1920, taking the center of the zoomed image
-        # This maintains the Ken Burns effect while keeping the target size
-        final_clip = zoomed.cropped(
-            x_center=target_width/2, 
-            y_center=target_height/2,
-            width=target_width, 
-            height=target_height
-        )
-        
-        # Set exact duration
-        final_clip = self._set_exact_duration(final_clip, duration)
+        final_clip = VideoClip(make_frame, duration=duration).with_fps(30)
         
         return final_clip
     
@@ -955,10 +950,35 @@ class MotionEffectsComposer:
             
             # === 제목 렌더링 ===
             title_height = 0
-            TITLE_BOTTOM_MARGIN = 30  # 제목과 체크리스트 사이 여백
+            TITLE_BOTTOM_MARGIN = 40
             if summary_title:
-                title_font_size = int(font_size * 1.3)  # 체크리스트보다 30% 큰 폰트
-                title_font = _load_font(title_font_size)
+                # 제목 전용 설정 로드
+                try:
+                    from config.summary_card_config import (
+                        TITLE_COLOR, TITLE_STROKE_COLOR, TITLE_STROKE_WIDTH,
+                        TITLE_UNDERLINE_COLOR, TITLE_UNDERLINE_HEIGHT,
+                        TITLE_FONT_FILE
+                    )
+                except ImportError:
+                    TITLE_COLOR = "#FFFFFF"
+                    TITLE_STROKE_COLOR = "#000000"
+                    TITLE_STROKE_WIDTH = 3
+                    TITLE_UNDERLINE_COLOR = None
+                    TITLE_UNDERLINE_HEIGHT = 4
+                    TITLE_FONT_FILE = None
+                
+                title_font_size = int(font_size * 1.4)
+                
+                # 제목 전용 폰트 로드
+                if TITLE_FONT_FILE:
+                    from pathlib import Path as TPath
+                    title_font_path = TPath(__file__).parent.parent / "fonts" / TITLE_FONT_FILE
+                    try:
+                        title_font = ImageFont.truetype(str(title_font_path), title_font_size)
+                    except:
+                        title_font = _load_font(title_font_size)
+                else:
+                    title_font = _load_font(title_font_size)
                 
                 # 제목 텍스트 크기 계산
                 title_bbox = draw.textbbox((0, 0), summary_title, font=title_font)
@@ -970,13 +990,22 @@ class MotionEffectsComposer:
                 title_x = max(MARGIN_X, (VIDEO_WIDTH - title_text_width) / 2)
                 title_y = max(40, (VIDEO_HEIGHT - text_height - title_height) / 2)
                 
-                # 제목 그리기
-                title_stroke = {}
-                if TEXT_STROKE_WIDTH > 0:
-                    title_stroke['stroke_width'] = TEXT_STROKE_WIDTH + 1
-                    title_stroke['stroke_fill'] = TEXT_STROKE_COLOR
-                draw.text((title_x, title_y), summary_title, font=title_font, fill="#FFFFFF", **title_stroke)
-                print(f"      📌 카드 제목: {summary_title}")
+                # 제목 그리기 (설정 색상 사용)
+                title_stroke_kwargs = {}
+                if TITLE_STROKE_WIDTH > 0:
+                    title_stroke_kwargs['stroke_width'] = TITLE_STROKE_WIDTH
+                    title_stroke_kwargs['stroke_fill'] = TITLE_STROKE_COLOR
+                draw.text((title_x, title_y), summary_title, font=title_font, fill=TITLE_COLOR, **title_stroke_kwargs)
+                
+                # 밑줄 장식
+                if TITLE_UNDERLINE_COLOR:
+                    underline_y = title_y + title_text_height + 8
+                    underline_x1 = title_x
+                    underline_x2 = title_x + title_text_width
+                    for i in range(TITLE_UNDERLINE_HEIGHT):
+                        draw.line([(underline_x1, underline_y + i), (underline_x2, underline_y + i)], fill=TITLE_UNDERLINE_COLOR)
+                
+                print(f"      📌 카드 제목: {summary_title} (색상: {TITLE_COLOR})")
             
             # 중앙 정렬 (좌우 여백 보장) - 제목 높이만큼 아래로
             x = max(MARGIN_X, (VIDEO_WIDTH - text_width) / 2)

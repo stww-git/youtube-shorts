@@ -17,6 +17,25 @@ MAX_ITEMS = 5
 
 
 # ===========================================
+# 📌 카드 제목 스타일
+# ===========================================
+
+# 제목 글자 색상
+TITLE_COLOR = "#FFFFFF"  # 흰색 (어두운 배경)
+
+# 제목 외곽선
+TITLE_STROKE_COLOR = "#000000"  # 검정 외곽선
+TITLE_STROKE_WIDTH = 3
+
+# 제목 밑줄 색상 (None이면 밑줄 없음)
+TITLE_UNDERLINE_COLOR = "#FFD700"  # 골드 (Money Bite 브랜드)
+TITLE_UNDERLINE_HEIGHT = 4  # 밑줄 두께
+
+# 제목 폰트 (None이면 FONT_FILE 사용)
+TITLE_FONT_FILE = "nanumsquare/NanumSquareEB.ttf"  # ExtraBold
+
+
+# ===========================================
 # 🎨 텍스트 스타일
 # ===========================================
 

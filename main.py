@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "sokpyeonhan"
+ACTIVE_CHANNEL = "money-bite"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -60,7 +60,7 @@ CHANNELS = {
         "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,      # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
-        "ken_burns_zoom": 0.1,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
+        "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
@@ -82,12 +82,12 @@ CHANNELS = {
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
-        "typing_speed": 0.3,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
+        "typing_speed": 0.4,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
         "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
         "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
-        "ken_burns_zoom": 0.1,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
+        "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
 
