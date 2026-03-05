@@ -881,6 +881,16 @@ class MotionEffectsComposer:
                 except:
                     return ImageFont.load_default()
             
+            # 칠판 여백 설정 로드 (없으면 기본값)
+            try:
+                from config.summary_card_config import BOARD_MARGIN_X, BOARD_MARGIN_TOP
+            except ImportError:
+                BOARD_MARGIN_X = 150
+                BOARD_MARGIN_TOP = 250
+            
+            # 본문 텍스트 최대 허용 너비
+            max_text_width = VIDEO_WIDTH - (BOARD_MARGIN_X * 2)
+
             font_size = FONT_SIZE
             font = _load_font(font_size)
             
@@ -919,11 +929,16 @@ class MotionEffectsComposer:
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
             
-            # 텍스트가 화면 높이의 85%를 넘으면 폰트 크기 축소
-            max_text_height = int(VIDEO_HEIGHT * 0.85)
+            # 텍스트가 칠판 높이를 넘으면 폰트 크기 축소 (칠판 하단 마진 250 기준)
+            max_text_height = VIDEO_HEIGHT - BOARD_MARGIN_TOP - 250
             while (text_width > max_text_width or text_height > max_text_height) and font_size > 30:
                 font_size -= 4
                 font = _load_font(font_size)
+                wrapped_lines = _wrap_text_by_width(checklist[:MAX_ITEMS], font, max_text_width)
+                card_text = "\n".join(wrapped_lines)
+                bbox = dummy_draw.textbbox((0, 0), card_text, font=font, spacing=LINE_SPACING)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
                 wrapped_lines = _wrap_text_by_width(checklist[:MAX_ITEMS], font, max_text_width)
                 card_text = "\n".join(wrapped_lines)
                 bbox = dummy_draw.textbbox((0, 0), card_text, font=font, spacing=LINE_SPACING)
@@ -967,28 +982,35 @@ class MotionEffectsComposer:
                     TITLE_UNDERLINE_HEIGHT = 4
                     TITLE_FONT_FILE = None
                 
-                title_font_size = int(font_size * 1.4)
+                title_font_size = int(FONT_SIZE * 1.4)
                 
-                # 제목 전용 폰트 로드
-                if TITLE_FONT_FILE:
-                    from pathlib import Path as TPath
-                    title_font_path = TPath(__file__).parent.parent / "fonts" / TITLE_FONT_FILE
-                    try:
-                        title_font = ImageFont.truetype(str(title_font_path), title_font_size)
-                    except:
+                # 제목 자동 스케일링
+                while True:
+                    if TITLE_FONT_FILE:
+                        from pathlib import Path as TPath
+                        title_font_path = TPath(__file__).parent.parent / "fonts" / TITLE_FONT_FILE
+                        try:
+                            title_font = ImageFont.truetype(str(title_font_path), title_font_size)
+                        except:
+                            title_font = _load_font(title_font_size)
+                    else:
                         title_font = _load_font(title_font_size)
-                else:
-                    title_font = _load_font(title_font_size)
-                
-                # 제목 텍스트 크기 계산
-                title_bbox = draw.textbbox((0, 0), summary_title, font=title_font)
-                title_text_width = title_bbox[2] - title_bbox[0]
-                title_text_height = title_bbox[3] - title_bbox[1]
+                        
+                    title_bbox = draw.textbbox((0, 0), summary_title, font=title_font)
+                    title_text_width = title_bbox[2] - title_bbox[0]
+                    title_text_height = title_bbox[3] - title_bbox[1]
+                    
+                    if title_text_width <= max_text_width or title_font_size <= 40:
+                        break
+                    title_font_size -= 2
+                    
                 title_height = title_text_height + TITLE_BOTTOM_MARGIN
+                if title_font_size != int(FONT_SIZE * 1.4):
+                    print(f"      ℹ️ 제목 폰트 크기 자동 조정: {int(FONT_SIZE * 1.4)} → {title_font_size}")
                 
-                # 제목 중앙 배치
-                title_x = max(MARGIN_X, (VIDEO_WIDTH - title_text_width) / 2)
-                title_y = max(40, (VIDEO_HEIGHT - text_height - title_height) / 2)
+                # 제목 중앙 배치 (칠판 마진 최상단에서 시작)
+                title_x = max(BOARD_MARGIN_X, (VIDEO_WIDTH - title_text_width) / 2)
+                title_y = max(BOARD_MARGIN_TOP, (VIDEO_HEIGHT - text_height - title_height) / 2)
                 
                 # 제목 그리기 (설정 색상 사용)
                 title_stroke_kwargs = {}
@@ -1008,11 +1030,22 @@ class MotionEffectsComposer:
                 print(f"      📌 카드 제목: {summary_title} (색상: {TITLE_COLOR})")
             
             # 중앙 정렬 (좌우 여백 보장) - 제목 높이만큼 아래로
-            x = max(MARGIN_X, (VIDEO_WIDTH - text_width) / 2)
+            x = max(BOARD_MARGIN_X, (VIDEO_WIDTH - text_width) / 2)
             if summary_title:
                 y = title_y + title_height
             else:
-                y = (VIDEO_HEIGHT - text_height) / 2
+                y = max(BOARD_MARGIN_TOP, (VIDEO_HEIGHT - text_height) / 2)
+            
+            # 전체 텍스트와 타이틀이 합쳐진 영역이 하단을 벗어나지 않게 보정
+            total_y_end = y + text_height
+            bottom_safe_margin = 150
+            if total_y_end > (VIDEO_HEIGHT - bottom_safe_margin):
+                offset = total_y_end - (VIDEO_HEIGHT - bottom_safe_margin)
+                if summary_title:
+                    title_y -= offset
+                    y -= offset
+                else:
+                    y -= offset
             
             # 텍스트 그리기 (외곽선 포함)
             stroke_kwargs = {}

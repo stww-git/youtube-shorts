@@ -336,7 +336,9 @@ class RecipeVideoPipeline:
                 refresh_token = os.getenv("REFRESH_TOKEN")
             
             if not all([client_id, client_secret, refresh_token]):
-                print_error("업로드 불가: CLIENT_ID, CLIENT_SECRET 또는 REFRESH_TOKEN 환경변수가 없습니다.")
+                error_msg = "업로드 불가: CLIENT_ID, CLIENT_SECRET 또는 REFRESH_TOKEN 환경변수가 없습니다."
+                print_error(error_msg)
+                raise Exception(error_msg)
             else:
                 try:
                     from core.upload.youtube_uploader import YouTubeUploader
