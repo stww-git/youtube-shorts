@@ -622,48 +622,54 @@ class MotionEffectsComposer:
             
             # Wrap text and calculate layout
             dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
-            words = text.split()
+            
+            # 명시적 줄바꿈(\n) 처리: 먼저 줄 단위로 분리한 뒤, 각 줄 내부에서 단어 분리
+            explicit_lines = text.split('\n')
+            
             line_layouts = [] # Each element is a list of {'text': word, 'width': w, 'color': color}
-            current_line_words = []
-            current_line_width = 0
             
             # Calculate space width once
             space_width = dummy_draw.textbbox((0, 0), " ", font=font)[2] - dummy_draw.textbbox((0, 0), " ", font=font)[0]
             word_counter = 0  # 전체 단어 인덱스 추적 (하이라이트용)
             
-            for word in words:
-                word_bbox = dummy_draw.textbbox((0, 0), word, font=font)
-                word_width = word_bbox[2] - word_bbox[0]
+            for line_text in explicit_lines:
+                words = line_text.split()
+                if not words:
+                    continue
+                    
+                current_line_words = []
+                current_line_width = 0
                 
-                # Check if adding this word exceeds max_width
-                # If current_line_words is empty, it's the first word, so add it regardless
-                # Otherwise, check if current_line_width + space + word_width > max_width
-                if current_line_words and (current_line_width + space_width + word_width > max_width):
-                    # Start a new line
+                for word in words:
+                    word_bbox = dummy_draw.textbbox((0, 0), word, font=font)
+                    word_width = word_bbox[2] - word_bbox[0]
+                    
+                    # Check if adding this word exceeds max_width
+                    if current_line_words and (current_line_width + space_width + word_width > max_width):
+                        # Start a new line
+                        line_layouts.append(current_line_words)
+                        current_line_words = []
+                        current_line_width = 0
+                    
+                    # Add word to current line
+                    keyword_color = get_keyword_color(word, text_color) if not style.get('skip_keyword_color') else text_color
+                    if not style.get('skip_keyword_color') and highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
+                        color = POPIN_HIGHLIGHT_COLOR
+                    else:
+                        color = keyword_color
+                    word_counter += 1
+                    current_line_words.append({
+                        "text": word,
+                        "width": word_width,
+                        "color": color
+                    })
+                    current_line_width += word_width
+                    if len(current_line_words) > 1:
+                        current_line_width += space_width
+                
+                # 각 명시적 줄의 끝에서 강제로 줄 분리
+                if current_line_words:
                     line_layouts.append(current_line_words)
-                    current_line_words = []
-                    current_line_width = 0
-                
-                # Add word to current line
-                keyword_color = get_keyword_color(word, text_color) if not style.get('skip_keyword_color') else text_color
-                # Pop-in 하이라이트: skip_keyword_color가 아닐 때만
-                if not style.get('skip_keyword_color') and highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
-                    color = POPIN_HIGHLIGHT_COLOR
-                else:
-                    color = keyword_color
-                word_counter += 1
-                current_line_words.append({
-                    "text": word,
-                    "width": word_width,
-                    "color": color
-                })
-                current_line_width += word_width
-                if len(current_line_words) > 1: # Add space width only if it's not the first word on the line
-                    current_line_width += space_width
-            
-            # Add any remaining words as the last line
-            if current_line_words:
-                line_layouts.append(current_line_words)
             
             # Calculate total image size based on line_layouts
             line_spacing = 10
@@ -1008,9 +1014,9 @@ class MotionEffectsComposer:
                 if title_font_size != int(FONT_SIZE * 1.4):
                     print(f"      ℹ️ 제목 폰트 크기 자동 조정: {int(FONT_SIZE * 1.4)} → {title_font_size}")
                 
-                # 제목 중앙 배치 (칠판 마진 최상단에서 시작)
+                # 제목 중앙 배치 (칠판 최상단에 고정)
                 title_x = max(BOARD_MARGIN_X, (VIDEO_WIDTH - title_text_width) / 2)
-                title_y = max(BOARD_MARGIN_TOP, (VIDEO_HEIGHT - text_height - title_height) / 2)
+                title_y = BOARD_MARGIN_TOP
                 
                 # 제목 그리기 (설정 색상 사용)
                 title_stroke_kwargs = {}
@@ -1107,7 +1113,7 @@ class MotionEffectsComposer:
                     return color
         return 'white'
 
-    def _add_subtitle_with_ai_effects(self, clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=None):
+    def _add_subtitle_with_ai_effects(self, clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=None, subtitle_mode='single'):
         """AI가 지정한 어절/효과 데이터로 자막을 렌더링합니다."""
         import math
         from config.subtitle_config import SUBTITLE_Y_POSITION
@@ -1155,7 +1161,7 @@ class MotionEffectsComposer:
                 return CompositeVideoClip([clip, sub_clip])
             return clip
         
-        # single 모드: 어절 단위로 순차 표시
+        # single / stack 모드: 어절 단위로 순차 표시
         num_words = len(ai_words)
         if num_words == 0:
             return clip
@@ -1181,7 +1187,20 @@ class MotionEffectsComposer:
             if ai_color != 'white':
                 word_render_style['text_color'] = ai_color
             
-            img_path = self._create_subtitle_image(word_text, word_render_style, highlight_word_idx=-1)
+            # stack 모드: accumulate + 줄바꿈 (최대 2줄)
+            if subtitle_mode == 'stack':
+                # 현재까지의 어절을 줄바꿈으로 누적 (최대 2줄만 보여줌)
+                accumulated_words = [w.get('text', '') for w in ai_words[:w_idx + 1] if w.get('text', '')]
+                if len(accumulated_words) > 2:
+                    # 마지막 2개만 보여줌 (슬라이딩 윈도우)
+                    visible_words = accumulated_words[-2:]
+                else:
+                    visible_words = accumulated_words
+                render_text = '\n'.join(visible_words)
+            else:
+                render_text = word_text
+            
+            img_path = self._create_subtitle_image(render_text, word_render_style, highlight_word_idx=-1)
             if img_path and os.path.exists(img_path):
                 partial_clip = ImageClip(img_path)
                 
@@ -1250,7 +1269,7 @@ class MotionEffectsComposer:
             if scene_effect:
                 from config.subtitle_config import get_subtitle_style, SUBTITLE_Y_POSITION
                 style = get_subtitle_style(False)  # AI 모드: 기본 흰색, color_keywords로 색상 적용
-                return self._add_subtitle_with_ai_effects(clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=color_keywords)
+                return self._add_subtitle_with_ai_effects(clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=color_keywords, subtitle_mode=subtitle_mode)
             
             # --- 1. Smart Text Splitting (문장부호 + 길이 기반 분할) ---
             # 목표: 한 화면에 한 줄만 나오도록 적절히 자르기
@@ -1344,7 +1363,7 @@ class MotionEffectsComposer:
                 current_time += seg_duration
             
             if subtitle_clips:
-                if subtitle_mode in ("accumulate", "single"):
+                if subtitle_mode in ("accumulate", "single", "stack"):
                     # Pop-in 효과: 어절 단위로 순차적으로 나타나는 애니메이션
                     animated_subtitle_clips = []
                     
@@ -1373,28 +1392,66 @@ class MotionEffectsComposer:
                             
                             interval = typing_duration / len(words) if len(words) > 0 else typing_duration
                             
-                            for w_idx in range(len(words)):
-                                if subtitle_mode == "accumulate":
-                                    # 누적형: 어절이 계속 쌓임
-                                    partial_text = ' '.join(words[:w_idx + 1])
-                                    highlight_idx = w_idx
-                                    current_style = style
-                                else:
-                                    # single: 한 어절만 표시 (큰 폰트)
-                                    partial_text = words[w_idx]
-                                    highlight_idx = -1
-                                    current_style = single_style
-                                
-                                partial_img_path = self._create_subtitle_image(partial_text, current_style, highlight_word_idx=highlight_idx)
-                                if partial_img_path and os.path.exists(partial_img_path):
-                                    partial_clip = ImageClip(partial_img_path)
-                                    
-                                    if w_idx == len(words) - 1:
-                                        partial_dur = hold_duration + interval
+                            if subtitle_mode == "stack":
+                                chunks = [words[i:i + 2] for i in range(0, len(words), 2)]
+                                global_word_idx = 0
+                                for chunk in chunks:
+                                    for w_idx, word_text in enumerate(chunk):
+                                        if w_idx == 0:
+                                            lines_text = [word_text, " "]
+                                            highlight_idx = 0
+                                        else:
+                                            lines_text = [chunk[0], word_text]
+                                            highlight_idx = 1
+                                        
+                                        partial_text = "\n".join(lines_text)
+                                        current_style = style
+                                        
+                                        partial_img_path = self._create_subtitle_image(partial_text, current_style, highlight_word_idx=highlight_idx)
+                                        if partial_img_path and os.path.exists(partial_img_path):
+                                            partial_clip = ImageClip(partial_img_path)
+                                            if global_word_idx == len(words) - 1:
+                                                partial_dur = hold_duration + interval
+                                            else:
+                                                partial_dur = interval
+                                                
+                                            partial_clip = self._set_exact_duration(partial_clip, partial_dur)
+                                            try:
+                                                partial_clip = partial_clip.with_position(('center', SUBTITLE_Y_POSITION))
+                                            except AttributeError:
+                                                partial_clip = partial_clip.set_position(('center', SUBTITLE_Y_POSITION))
+                                                
+                                            partial_start = seg_start + (global_word_idx * interval)
+                                            try:
+                                                partial_clip = partial_clip.with_start(partial_start)
+                                            except AttributeError:
+                                                partial_clip = partial_clip.set_start(partial_start)
+                                                
+                                            animated_subtitle_clips.append(partial_clip)
+                                        global_word_idx += 1
+                            else:
+                                for w_idx in range(len(words)):
+                                    if subtitle_mode == "accumulate":
+                                        # 누적형: 어절이 계속 쌓임
+                                        partial_text = ' '.join(words[:w_idx + 1])
+                                        highlight_idx = w_idx
+                                        current_style = style
                                     else:
-                                        partial_dur = interval
+                                        # single: 한 어절만 표시 (큰 폰트)
+                                        partial_text = words[w_idx]
+                                        highlight_idx = -1
+                                        current_style = single_style
                                     
-                                    partial_clip = self._set_exact_duration(partial_clip, partial_dur)
+                                    partial_img_path = self._create_subtitle_image(partial_text, current_style, highlight_word_idx=highlight_idx)
+                                    if partial_img_path and os.path.exists(partial_img_path):
+                                        partial_clip = ImageClip(partial_img_path)
+                                        
+                                        if w_idx == len(words) - 1:
+                                            partial_dur = hold_duration + interval
+                                        else:
+                                            partial_dur = interval
+                                        
+                                        partial_clip = self._set_exact_duration(partial_clip, partial_dur)
                                     
                                     # single 모드: 스케일 팝 / 바운스 팝 효과 적용
                                     if subtitle_mode == "single" and partial_dur >= 0.15:

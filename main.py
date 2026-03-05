@@ -81,8 +81,8 @@ CHANNELS = {
         "test_mode": True,        # False: 실제 이미지 생성
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",      # public / unlisted / private
-        "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
-        "typing_speed": 0.4,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
+        "subtitle_mode": "stack", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩 / stack: 2줄 계단식 누적
+        "typing_speed": 0.5,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
         "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
         "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
@@ -124,7 +124,7 @@ CHANNELS = {
     "family-health-kr": {
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
-        "upload": False,          # True: YouTube 업로드
+        "upload": True,          # True: YouTube 업로드
         "privacy": "private",     # public / unlisted / private
         "parallel": False,        # True: 이미지 병렬 생성
         "tts_fallback": False,  # False: 실패 시 바로 종료
@@ -191,7 +191,7 @@ def main():
     bgm_enabled = channel_settings.get("bgm_enabled", False)  # 배경음악 사용 여부
     bgm_volume = channel_settings.get("bgm_volume", 0.1)  # 배경음악 볼륨
     bgm_file = channel_settings.get("bgm_file", None)  # 배경음악 파일명
-    subtitle_mode = channel_settings.get("subtitle_mode", "static")  # 자막 모드 (static/accumulate/single)
+    subtitle_mode = channel_settings.get("subtitle_mode", "static")  # 자막 모드 (static/accumulate/single/stack)
     typing_speed = channel_settings.get("typing_speed", 0.20)  # 타이핑 속도
     single_font_size = channel_settings.get("single_font_size", 140)  # single 모드 폰트 크기
     static_font_size = channel_settings.get("static_font_size", 80)  # static 모드 폰트 크기

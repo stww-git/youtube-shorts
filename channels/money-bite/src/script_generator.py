@@ -157,12 +157,13 @@ class ScriptGenerator:
         
         return {"summary_title": "", "checklist": []}
 
-    def generate_subtitle_effects(self, scenes: list) -> tuple:
+    def generate_subtitle_effects(self, scenes: list, single_font_size: int = 140) -> tuple:
         """
         AI가 대본을 분석하여 어절별 효과와 색상 키워드를 지정합니다.
         
         Args:
             scenes: 대본 scenes 리스트 [{scene_id, audio_text}, ...]
+            single_font_size: 자막 폰트 크기 (글자 수 상한선 계산용)
             
         Returns:
             tuple: (effects_dict, color_keywords)
@@ -172,7 +173,10 @@ class ScriptGenerator:
         script_lines = [f"{scene['scene_id']}. {scene['audio_text']}" for scene in scenes]
         script_text = "\n".join(script_lines)
         
-        prompt = SUBTITLE_EFFECT_PROMPT.format(script_text=script_text)
+        # 폰트 크기 기반 한 줄 최대 글자 수 계산 (화면 너비 1080px, 여백 감안 1000px)
+        max_chunk_chars = int(1000 / single_font_size)
+        
+        prompt = SUBTITLE_EFFECT_PROMPT.format(script_text=script_text, max_chunk_chars=max_chunk_chars)
         
         try:
             print(f"\n   🎨 [자막 효과 분석 중] AI가 어절별 효과를 판단합니다...")

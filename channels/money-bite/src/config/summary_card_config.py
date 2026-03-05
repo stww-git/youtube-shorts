@@ -44,10 +44,10 @@ TITLE_FONT_FILE = "nanumsquare/NanumSquareEB.ttf"  # ExtraBold
 # ===========================================
 
 # 글자 크기 (픽셀)
-FONT_SIZE = 70
+FONT_SIZE = 55
 
 # 줄 간격 (픽셀)
-LINE_SPACING = 35
+LINE_SPACING = 28
 
 # 글자 색상 (어두운 배경이므로 밝은 색상)
 TEXT_COLOR = "#FFD700"  # 골드 (Money Bite 브랜드 컬러)
