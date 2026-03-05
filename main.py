@@ -77,9 +77,9 @@ CHANNELS = {
     },
 
     "money-bite": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": False,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": True,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
         "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
         "typing_speed": 0.4,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
