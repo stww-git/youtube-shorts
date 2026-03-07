@@ -201,7 +201,7 @@ class RecipeVideoPipeline:
         color_keywords = {}
         if ai_subtitle_effects:
             print_step(4, 7, "자막 효과", "🎨 AI 자막 효과 분석 중")
-            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes)
+            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes, single_font_size=single_font_size, subtitle_mode=subtitle_mode)
             
             # 효과 데이터를 scenes에 병합
             for scene in scenes:

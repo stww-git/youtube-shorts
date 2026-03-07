@@ -597,7 +597,7 @@ class MotionEffectsComposer:
             # Unpack style
             font_path = style.get('font_path', self.font)
             font_size = style.get('font_size', 80)
-            from config.subtitle_config import (
+            from subtitle.config import (
                 get_keyword_color, 
                 SUBTITLE_TEXT_COLOR, 
                 SUBTITLE_STROKE_COLOR, 
@@ -1081,10 +1081,10 @@ class MotionEffectsComposer:
                     return color
         return 'white'
 
-    def _add_subtitle_with_ai_effects(self, clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=None):
+    def _add_subtitle_with_ai_effects(self, clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=None, subtitle_mode='single'):
         """AI가 지정한 어절/효과 데이터로 자막을 렌더링합니다."""
         import math
-        from config.subtitle_config import SUBTITLE_Y_POSITION
+        from subtitle.config import SUBTITLE_Y_POSITION
         
         display_mode = scene_effect.get('display', 'single')
         ai_words = scene_effect.get('words', [])
@@ -1092,12 +1092,13 @@ class MotionEffectsComposer:
         if not ai_words:
             return clip
         
-        # 폰트 크기: display 모드에 따라 분리
+        # 폰트 크기: MODE_SETTINGS에서 모드별 값 사용
+        from subtitle.config import get_mode_setting
         render_style = dict(style)
         if display_mode == 'static':
-            render_style['font_size'] = static_font_size
+            render_style['font_size'] = get_mode_setting('static', 'font_size', static_font_size)
         else:
-            render_style['font_size'] = single_font_size
+            render_style['font_size'] = get_mode_setting(subtitle_mode, 'font_size', single_font_size)
         
         # static 모드: 문장 전체를 한 번에 표시
         if display_mode == 'static':
@@ -1111,7 +1112,7 @@ class MotionEffectsComposer:
             
             # Scene 6 전용 3색 매핑 (좋아요 CTA)
             if '좋아요' in word_text:
-                from config.subtitle_config import get_scene6_word_color
+                from subtitle.config import get_scene6_word_color
                 word_render_style['word_color_func'] = get_scene6_word_color
             else:
                 ai_color = self._get_ai_color(word_text, color_keywords)
@@ -1135,6 +1136,10 @@ class MotionEffectsComposer:
                 
                 return CompositeVideoClip([clip, sub_clip])
             return clip
+        
+        # phrase 모드: 구절 단위로 통째 교체
+        if subtitle_mode == 'phrase':
+            return self._render_subtitle_phrase(clip, text, duration, render_style, scene_effect, single_font_size, typing_speed, color_keywords)
         
         # single 모드: 어절 단위로 순차 표시
         num_words = len(ai_words)
@@ -1194,7 +1199,80 @@ class MotionEffectsComposer:
         if animated_clips:
             return CompositeVideoClip([clip] + animated_clips)
         return clip
-    
+
+    # ================================================================
+    # Phrase 모드: 구절 단위 교체 (이전 구절을 완전히 교체)
+    # ================================================================
+    def _render_subtitle_phrase(self, clip, text, duration, style, scene_effect, single_font_size, typing_speed, color_keywords=None):
+        """phrase 모드: 의미 단위 구절을 통째로 표시하고 교체합니다."""
+        from subtitle.config import SUBTITLE_Y_POSITION, get_mode_setting
+        
+        ai_words = scene_effect.get('words', [])
+        num_phrases = len(ai_words)
+        if num_phrases == 0:
+            return clip
+        
+        # phrase 모드 전용 스타일
+        phrase_font_size = get_mode_setting('phrase', 'font_size', single_font_size)
+        render_style = dict(style)
+        render_style['font_size'] = phrase_font_size
+        render_style['skip_keyword_color'] = False
+        
+        # 시간 배분: 글자수 비례
+        phrase_texts = [w.get('text', '') for w in ai_words]
+        phrase_char_counts = [len(p.replace(' ', '')) for p in phrase_texts]
+        total_chars = sum(phrase_char_counts) or 1
+        
+        animated_clips = []
+        current_time = 0.0
+        
+        for p_idx, word_info in enumerate(ai_words):
+            phrase_text = word_info.get('text', '')
+            word_effect = word_info.get('effect', None)
+            
+            if not phrase_text:
+                continue
+            
+            # 글자수 비례 시간 배분
+            char_ratio = phrase_char_counts[p_idx] / total_chars
+            phrase_dur = duration * char_ratio
+            phrase_dur = max(0.3, phrase_dur)
+            
+            # AI 색상 적용
+            phrase_render_style = dict(render_style)
+            ai_color = self._get_ai_color(phrase_text, color_keywords)
+            if ai_color != 'white':
+                phrase_render_style['text_color'] = ai_color
+                phrase_render_style['skip_keyword_color'] = True
+            
+            # 구절 이미지 생성
+            img_path = self._create_subtitle_image(phrase_text, phrase_render_style, highlight_word_idx=-1)
+            if img_path and os.path.exists(img_path):
+                partial_clip = ImageClip(img_path)
+                partial_clip = self._set_exact_duration(partial_clip, phrase_dur)
+                
+                # bounce 효과 적용
+                if word_effect and phrase_dur >= 0.15:
+                    partial_clip = self._apply_word_effect(partial_clip, word_effect, phrase_dur)
+                
+                try:
+                    partial_clip = partial_clip.with_position(('center', SUBTITLE_Y_POSITION))
+                except AttributeError:
+                    partial_clip = partial_clip.set_position(('center', SUBTITLE_Y_POSITION))
+                
+                try:
+                    partial_clip = partial_clip.with_start(current_time)
+                except AttributeError:
+                    partial_clip = partial_clip.set_start(current_time)
+                
+                animated_clips.append(partial_clip)
+            
+            current_time += phrase_dur
+        
+        if animated_clips:
+            return CompositeVideoClip([clip] + animated_clips)
+        return clip
+
     def _apply_word_effect(self, clip, effect_type, clip_duration, bounce_count=1):
         """어절 클립에 bounce 효과를 적용합니다."""
         single_anim = min(0.2, clip_duration * 0.4)
@@ -1220,7 +1298,7 @@ class MotionEffectsComposer:
 
     def _add_subtitle(self, clip, text: str, duration: float, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, scene_effect: dict = None, color_keywords: dict = None):
         """Adds a subtitle overlay to a clip using Pillow for rendering."""
-        from config.subtitle_config import (
+        from subtitle.config import (
             get_subtitle_style, is_impact_text, 
             SUBTITLE_Y_POSITION
         )
@@ -1232,9 +1310,9 @@ class MotionEffectsComposer:
             
             # AI 효과 모드: scene_effect가 있으면 AI가 지정한 어절/효과 사용
             if scene_effect:
-                from config.subtitle_config import get_subtitle_style, SUBTITLE_Y_POSITION
+                from subtitle.config import get_subtitle_style, SUBTITLE_Y_POSITION
                 style = get_subtitle_style(False)  # AI 모드: 기본 흰색, color_keywords로 색상 적용
-                return self._add_subtitle_with_ai_effects(clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=color_keywords)
+                return self._add_subtitle_with_ai_effects(clip, text, duration, style, scene_effect, single_font_size, static_font_size, typing_speed, color_keywords=color_keywords, subtitle_mode=subtitle_mode)
             
             # --- 1. Smart Text Splitting (문장부호 + 길이 기반 분할) ---
             # 목표: 한 화면에 한 줄만 나오도록 적절히 자르기
@@ -1328,7 +1406,7 @@ class MotionEffectsComposer:
                 current_time += seg_duration
             
             if subtitle_clips:
-                if subtitle_mode in ("accumulate", "single"):
+                if subtitle_mode in ("accumulate", "single", "phrase", "stack"):
                     # Pop-in 효과: 어절 단위로 순차적으로 나타나는 애니메이션
                     animated_subtitle_clips = []
                     

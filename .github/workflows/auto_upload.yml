@@ -14,10 +14,10 @@ on:
     - cron: '30 21 * * *'  # KST 06:30
     - cron: '30 2 * * *'  # KST 11:30
     - cron: '30 8 * * *'  # KST 17:30
-    # money-bite (US EST optimal times)
-    - cron: '0 13 * * *'  # 8 AM EST — US morning commute
-    - cron: '0 17 * * *'  # 12 PM EST — US lunch time
-    - cron: '0 0 * * *'   # 7 PM EST — US evening peak
+    # money-bite: 07:15, 12:15, 18:15 KST (한국 타겟)
+    - cron: '15 22 * * *'  # KST 07:15
+    - cron: '15 3 * * *'   # KST 12:15
+    - cron: '15 9 * * *'   # KST 18:15
   workflow_dispatch:
     inputs:
       channel:
@@ -236,9 +236,9 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'money-bite' ||
       github.event_name == 'schedule' && (
-        github.event.schedule == '0 13 * * *' ||
-        github.event.schedule == '0 17 * * *' ||
-        github.event.schedule == '0 0 * * *'
+        github.event.schedule == '15 22 * * *' ||
+        github.event.schedule == '15 3 * * *' ||
+        github.event.schedule == '15 9 * * *'
       )
     
     steps:
