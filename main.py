@@ -52,7 +52,7 @@ CHANNELS = {
     "sokpyeonhan": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "subtitle_mode": "single", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩
         "typing_speed": 0.3,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
@@ -81,10 +81,7 @@ CHANNELS = {
         "test_mode": True,        # False: 실제 이미지 생성
         "upload": False,          # True: YouTube 업로드
         "privacy": "private",      # public / unlisted / private
-        "subtitle_mode": "stack", # static: 통짜 표시 / accumulate: 어절 누적 / single: 한 어절씩 / stack: 2줄 계단식 누적
-        "typing_speed": 0.5,     # 어절당 타이핑 비율 (0.1=빠름, 0.2=보통, 0.3=느림)
-        "single_font_size": 110, # single 모드 자막 폰트 크기 (기본 80, single용 권장 120~160)
-        "static_font_size": 100,  # static 모드 자막 폰트 크기 (Scene 6 "좋아요 한 번만 눌러주세요")
+        "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)

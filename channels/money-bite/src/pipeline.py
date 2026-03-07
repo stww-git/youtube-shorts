@@ -39,7 +39,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", typing_speed: float = 0.20, single_font_size: int = 140, static_font_size: int = 80, ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", ken_burns_zoom: float = 0.05, show_title: bool = True, summary_card_show_title: bool = True, **kwargs):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", ken_burns_zoom: float = 0.05, show_title: bool = True, summary_card_show_title: bool = True, **kwargs):
         """
         Execute the video generation pipeline for Money Bite channel.
         """
@@ -139,7 +139,9 @@ class RecipeVideoPipeline:
         color_keywords = {}
         if ai_subtitle_effects:
             print_step(3, 6, "자막 효과", "🎨 AI 자막 효과 분석 중")
-            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes, single_font_size=single_font_size)
+            from subtitle.config import get_mode_setting
+            single_font_size = get_mode_setting(subtitle_mode, 'font_size', 110)
+            subtitle_effects, color_keywords = self.script_gen.generate_subtitle_effects(scenes, single_font_size=single_font_size, subtitle_mode=subtitle_mode)
             
             # 효과 데이터를 scenes에 병합
             for scene in scenes:
@@ -303,7 +305,7 @@ class RecipeVideoPipeline:
         # Save prompt debug log before rendering
         debug_logger.save()
         
-        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title if show_title else None, summary_checklist=summary_checklist, summary_title=summary_title, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, subtitle_mode=subtitle_mode, typing_speed=typing_speed, single_font_size=single_font_size, static_font_size=static_font_size, ai_subtitle_effects=ai_subtitle_effects, color_keywords=color_keywords, ken_burns_effect=ken_burns_effect, ken_burns_zoom=ken_burns_zoom, summary_card_show_title=summary_card_show_title)
+        result = self.composer.compose_video(scenes, audio_path=None, output_path=final_output, video_title=video_title if show_title else None, summary_checklist=summary_checklist, summary_title=summary_title, summary_card_duration=summary_card_duration, include_disclaimer=include_disclaimer, bgm_enabled=bgm_enabled, bgm_volume=bgm_volume, bgm_file=bgm_file, subtitle_mode=subtitle_mode, ai_subtitle_effects=ai_subtitle_effects, color_keywords=color_keywords, ken_burns_effect=ken_burns_effect, ken_burns_zoom=ken_burns_zoom, summary_card_show_title=summary_card_show_title)
         
         if not result:
             print_error("영상 합성 실패!")

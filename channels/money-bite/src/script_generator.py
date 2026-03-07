@@ -17,7 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from google import genai
 from google.genai import types
 from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT, SUBTITLE_EFFECT_PROMPT
+from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
+from subtitle.prompts import get_subtitle_prompt
+from subtitle.config import get_mode_setting
 
 logger = logging.getLogger(__name__)
 
@@ -157,13 +159,14 @@ class ScriptGenerator:
         
         return {"summary_title": "", "checklist": []}
 
-    def generate_subtitle_effects(self, scenes: list, single_font_size: int = 140) -> tuple:
+    def generate_subtitle_effects(self, scenes: list, single_font_size: int = 140, subtitle_mode: str = 'single') -> tuple:
         """
         AI가 대본을 분석하여 어절별 효과와 색상 키워드를 지정합니다.
         
         Args:
             scenes: 대본 scenes 리스트 [{scene_id, audio_text}, ...]
             single_font_size: 자막 폰트 크기 (글자 수 상한선 계산용)
+            subtitle_mode: 자막 모드 (모드별 프롬프트 선택용)
             
         Returns:
             tuple: (effects_dict, color_keywords)
@@ -174,9 +177,12 @@ class ScriptGenerator:
         script_text = "\n".join(script_lines)
         
         # 폰트 크기 기반 한 줄 최대 글자 수 계산 (화면 너비 1080px, 여백 감안 1000px)
-        max_chunk_chars = int(1000 / single_font_size)
+        font_size = get_mode_setting(subtitle_mode, 'font_size', single_font_size)
+        max_chunk_chars = int(1000 / font_size)
         
-        prompt = SUBTITLE_EFFECT_PROMPT.format(script_text=script_text, max_chunk_chars=max_chunk_chars)
+        # 모드별 프롬프트 선택
+        prompt_template = get_subtitle_prompt(subtitle_mode)
+        prompt = prompt_template.format(script_text=script_text, max_chunk_chars=max_chunk_chars)
         
         try:
             print(f"\n   🎨 [자막 효과 분석 중] AI가 어절별 효과를 판단합니다...")
