@@ -142,7 +142,9 @@ class TitleGenerator:
         
         # Calculate total image size
         line_height_px = int(font_size * line_height)
-        total_height = line_height_px * len(lines) + stroke_width * 2
+        # Add 20px padding (10 top, 10 bottom) to prevent tails of g, p, y from clipping
+        padding_y = 20
+        total_height = line_height_px * len(lines) + stroke_width * 2 + padding_y
         
         # Find max line width for image width
         max_line_width = max(get_text_width(line) for line in lines) if lines else max_width

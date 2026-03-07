@@ -106,7 +106,8 @@ CHANNELS = {
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
-        "tts_voice_name": "Puck",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
+        "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
+        "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
 
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
@@ -219,6 +220,7 @@ def main():
     tts_voice_name = channel_settings.get("tts_voice_name", "Kore")  # TTS 음성
     show_title = channel_settings.get("show_title", True)  # 영상 제목 표시 여부
     summary_card_show_title = channel_settings.get("summary_card_show_title", True)  # 핵심카드에 제목 표시 여부
+    tts_mode = channel_settings.get("tts_mode", "unified")  # TTS 모드 (unified/individual)
     
     if not channel_id:
         print("   ❌ 채널이 선택되지 않았습니다.")
@@ -277,7 +279,8 @@ def main():
                 ken_burns_effect=ken_burns_effect,
                 ken_burns_zoom=ken_burns_zoom,
                 show_title=show_title,
-                summary_card_show_title=summary_card_show_title
+                summary_card_show_title=summary_card_show_title,
+                tts_mode=tts_mode
             )
         elif hasattr(pipeline_module, 'run'):
             pipeline_module.run(

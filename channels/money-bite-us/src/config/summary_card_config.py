@@ -16,7 +16,7 @@ CARD_DURATION = 0.5
 MAX_ITEMS = 5
 
 # 칠판(배경) 여백 설정 (안전 마진)
-BOARD_MARGIN_X = 150      # 좌우 프레임 침범 방지 여백
+BOARD_MARGIN_X = 120      # 좌우 프레임 침범 방지 여백
 BOARD_MARGIN_TOP = 250    # 상단 여백 (제목 시작 위치)
 
 
@@ -44,10 +44,10 @@ TITLE_FONT_FILE = "nanumsquare/NanumSquareEB.ttf"  # ExtraBold
 # ===========================================
 
 # 글자 크기 (픽셀)
-FONT_SIZE = 55
+FONT_SIZE = 45
 
 # 줄 간격 (픽셀)
-LINE_SPACING = 28
+LINE_SPACING = 32
 
 # 글자 색상 (어두운 배경이므로 밝은 색상)
 TEXT_COLOR = "#FFD700"  # 골드 (Money Bite 브랜드 컬러)

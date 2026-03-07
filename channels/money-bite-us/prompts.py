@@ -35,10 +35,10 @@ Make it understandable for anyone, no matter how technical the term is.
 [Script Structure — exactly 7 lines]
 
 Line 1: Hook (direct question)
-- Format: "What is [term]?" — the simplest, most direct question possible
-- Must be ultra-short, 1-second attention grab. No filler words like "actually" or "really"
+- Format: "So, what is [term]?" — the simplest, most direct question possible with a conversational start
+- Must be ultra-short, but the "So," gives the TTS engine time to warm up. No filler words like "actually" or "really"
 - Must end with a question mark (?)
-- Examples: "What is market cap?", "What is P/E ratio?"
+- Examples: "So, what is market cap?", "So, what is P/E ratio?"
 
 Line 2: Precise definition (textbook-accurate, one sentence)
 - Even experienced investors should nod and think "Yep, that's the exact definition"
@@ -61,7 +61,7 @@ Line 7: One-line takeaway
 - Write in English
 - Conversational, casual, friendly tone
 - No exclamations, emojis, or parentheses
-- No periods at the end of sentences
+- Use commas and periods naturally for standard English pacing (important for voiceovers)
 
 [Prohibited]
 - No exaggerated claims
@@ -71,13 +71,13 @@ Line 7: One-line takeaway
 Convert each line into a scene, generating exactly 7 scenes:
 {{
     "scenes": [
-    {{"scene_id": 1, "audio_text": "What is P/E ratio?", "duration": 5}},
-    {{"scene_id": 2, "audio_text": "P/E ratio is the stock price divided by earnings per share", "duration": 4}},
-    {{"scene_id": 3, "audio_text": "Think of it like buying a coffee shop that makes 100K a year but the owner wants a million for it", "duration": 6}},
-    {{"scene_id": 4, "audio_text": "That coffee shop has a P/E of 10 meaning it takes 10 years to make your money back", "duration": 6}},
-    {{"scene_id": 5, "audio_text": "Now if another shop making the same profit is selling for 500K the P/E is only 5 so its a way better deal", "duration": 6}},
-    {{"scene_id": 6, "audio_text": "If you ignore this you could end up paying premium prices for a stock that takes a century to pay off", "duration": 6}},
-    {{"scene_id": 7, "audio_text": "Remember low P/E means the shop is on sale high P/E means everyones fighting to get in", "duration": 6}}
+    {{"scene_id": 1, "audio_text": "So, what is P/E ratio?", "duration": 5}},
+    {{"scene_id": 2, "audio_text": "P/E ratio is the stock price, divided by earnings per share.", "duration": 4}},
+    {{"scene_id": 3, "audio_text": "Think of it like buying a coffee shop that makes 100K a year, but the owner wants a million for it.", "duration": 6}},
+    {{"scene_id": 4, "audio_text": "That coffee shop has a P/E of 10, meaning it takes 10 years to make your money back.", "duration": 6}},
+    {{"scene_id": 5, "audio_text": "Now if another shop making the same profit is selling for 500K, the P/E is only 5, so it's a way better deal.", "duration": 6}},
+    {{"scene_id": 6, "audio_text": "If you ignore this, you could end up paying premium prices for a stock that takes a century to pay off.", "duration": 6}},
+    {{"scene_id": 7, "audio_text": "Remember, low P/E means the shop is on sale. High P/E means everyone's fighting to get in.", "duration": 6}}
     ]
 }}
 """
@@ -187,7 +187,7 @@ Read the topic information below and extract a card title plus 4 key takeaway po
    - Point 3 (Practical rule): When/how investors should use this in practice (e.g., "Compare within the same industry — tech vs tech, not tech vs banking")
    - Point 4 (Warning): The painful real-world mistake people make by ignoring this (e.g., "Ignoring it means you might overpay at the peak and watch your money shrink")
 3. **Format**: "1. [short, clear sentence]" — numbered, with period and space. Tone: friendly but direct.
-4. **Length**: As short and concise as possible, but clarity comes first. Text auto-shrinks if too long.
+4. **Length**: MAXIMUM 10-12 words per point. As short and concise as possible. Long sentences will clutter the screen.
 5. **Language**: Natural, YouTube-friendly English.
 
 [Output Format - JSON]

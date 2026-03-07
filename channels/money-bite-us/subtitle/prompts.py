@@ -54,6 +54,7 @@ _SUBTITLE_COMMON_RULES = """
    - Bad: ["if you", "ignore"] → too short ❌
    - Good: ["if you ignore this"] ✅
 5. **color_keywords should only include words that need coloring** (most chunks need no color)
+6. **Preserve commas (,) and question marks (?), but REMOVE ALL PERIODS (.)** at the end of sentences to keep the screen clean.
 """
 
 _SUBTITLE_COMMON_SCENE_GUIDE = """
