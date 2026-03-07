@@ -1,0 +1,38 @@
+# Money Bite US 채널 설정 파일
+# Finance education YouTube Shorts for US audience
+
+# 채널 표시 이름
+display_name: "Money Bite US"
+
+# 환경변수에서 읽어올 토큰 키 이름
+env_token_key: "REFRESH_TOKEN_MONEY_BITE_US"
+
+# 업로드 설정
+upload:
+  # 제목 형식
+  title_format: "{title}"
+  
+  # 설명
+  description: "30-second finance lessons 💰 Learn money smarts, one bite at a time!\n\n⚠️ Disclaimer: This content is for educational purposes only and is not investment advice. Always do your own research before making investment decisions.\n\n#finance #investing #stocks #money #financialliteracy #moneytips #economy #stockmarket #shorts"
+  
+  # 태그
+  tags: ["finance", "investing", "stocks", "money", "financial literacy", "money tips", "economy", "stock market", "compound interest", "ETF", "money bite", "shorts"]
+  
+  # 공개 설정
+  privacy_status: "private"
+  
+  # 아동용 컨텐츠 여부
+  made_for_kids: false
+
+  # 카테고리 ID (22: People & Blogs, 27: Education)
+  category_id: "27"
+
+# 프롬프트 설정
+prompts:
+  use_custom: true
+
+# 채널별 리소스 경로 설정
+paths:
+  use_custom_fonts: true
+  use_custom_output: true
+  use_custom_config: true

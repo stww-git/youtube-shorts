@@ -18,6 +18,10 @@ on:
     - cron: '15 22 * * *'  # KST 07:15
     - cron: '15 3 * * *'   # KST 12:15
     - cron: '15 9 * * *'   # KST 18:15
+    # money-bite-us (US EST optimal times)
+    - cron: '0 14 * * *'   # 9 AM EST / 6 AM PST — morning commute
+    - cron: '30 17 * * *'  # 12:30 PM EST / 9:30 AM PST — lunch east, morning west
+    - cron: '0 1 * * *'    # 8 PM EST / 5 PM PST — evening peak
   workflow_dispatch:
     inputs:
       channel:
@@ -29,6 +33,7 @@ on:
           - test-channel-trial1
           - family-health-kr
           - money-bite
+          - money-bite-us
 
 permissions:
   contents: write
@@ -82,7 +87,7 @@ jobs:
     - name: Generate and Upload Video
       if: steps.check.outputs.skip != 'true'
       env:
-        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_SOKPYEONHAN }}
+        REFRESH_TOKEN_SOKPYEONHAN: ${{ secrets.REFRESH_TOKEN_SOKPYEONHAN }}
       run: python main.py --channel sokpyeonhan --upload
     
     - name: Update History
@@ -145,7 +150,7 @@ jobs:
     - name: Generate and Upload Video
       if: steps.check.outputs.skip != 'true'
       env:
-        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_TEST_CHANNEL_TRIAL1 }}
+        REFRESH_TOKEN_TEST_CHANNEL_TRIAL1: ${{ secrets.REFRESH_TOKEN_TEST_CHANNEL_TRIAL1 }}
       run: python main.py --channel test-channel-trial1 --upload
     
     - name: Update History
@@ -210,7 +215,7 @@ jobs:
     - name: Generate and Upload Video
       if: steps.check.outputs.skip != 'true'
       env:
-        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_FAMILY_HEALTH_KR }}
+        REFRESH_TOKEN_FAMILY_HEALTH_KR: ${{ secrets.REFRESH_TOKEN_FAMILY_HEALTH_KR }}
       run: python main.py --channel family-health-kr --upload
     
     - name: Update History
@@ -274,7 +279,7 @@ jobs:
     - name: Generate and Upload Video
       if: steps.check.outputs.skip != 'true'
       env:
-        REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN_MONEY_BITE }}
+        REFRESH_TOKEN_MONEY_BITE: ${{ secrets.REFRESH_TOKEN_MONEY_BITE }}
       run: python main.py --channel money-bite --upload
     
     - name: Update History
@@ -291,5 +296,69 @@ jobs:
       with:
         name: money-bite-${{ github.run_number }}
         path: channels/money-bite/output/**/*.mp4
+        retention-days: 1
+        if-no-files-found: error
+
+  # money-bite-us 채널 (US target)
+  money_bite_us:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'money-bite-us' ||
+      github.event_name == 'schedule' && (
+        github.event.schedule == '0 14 * * *' ||
+        github.event.schedule == '30 17 * * *' ||
+        github.event.schedule == '0 1 * * *'
+      )
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check if channel is enabled
+      id: check
+      run: |
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          if grep -A3 '"money-bite-us"' main.py | grep -q '"enabled": False'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ money-bite-us 채널이 비활성화됨 - 스킵"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "🚀 수동 실행 - enabled 체크 건너뜀"
+        fi
+    
+    - uses: actions/setup-python@v5
+      if: steps.check.outputs.skip != 'true'
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      if: steps.check.outputs.skip != 'true'
+      run: |
+        pip install -r requirements.txt
+        sudo apt-get update && sudo apt-get install -y ffmpeg
+    
+    - name: Generate and Upload Video
+      if: steps.check.outputs.skip != 'true'
+      env:
+        REFRESH_TOKEN_MONEY_BITE_US: ${{ secrets.REFRESH_TOKEN_MONEY_BITE_US }}
+      run: python main.py --channel money-bite-us --upload
+    
+    - name: Update History
+      if: steps.check.outputs.skip != 'true'
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add channels/money-bite-us/history.json 2>/dev/null || true
+        git diff --staged --quiet || git commit -m "Update history (money-bite-us) [skip ci]"
+        git push || true
+    
+    - uses: actions/upload-artifact@v4
+      if: steps.check.outputs.skip != 'true'
+      with:
+        name: money-bite-us-${{ github.run_number }}
+        path: channels/money-bite-us/output/**/*.mp4
         retention-days: 1
         if-no-files-found: error
