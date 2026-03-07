@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "money-bite-us"
+ACTIVE_CHANNEL = "money-bite"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -58,6 +58,7 @@ CHANNELS = {
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,      # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
+        "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
@@ -83,6 +84,7 @@ CHANNELS = {
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
+        "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
 
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
@@ -98,10 +100,10 @@ CHANNELS = {
     },
 
     "money-bite-us": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
-        "privacy": "private",      # public / unlisted / private
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
+        "privacy": "public",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지

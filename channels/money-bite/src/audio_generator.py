@@ -169,9 +169,9 @@ class AudioGenerator:
                         
                         raise Exception(f"Gemini TTS failed after {MAX_RETRIES} retries: {error_str}")
 
-    def generate_speech_batch(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False):
+    def generate_speech_unified(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False):
         """
-        전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
+        [Unified 모드] 전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
         일관된 톤과 자연스러운 억양을 유지합니다.
         
         Args:
@@ -290,6 +290,93 @@ class AudioGenerator:
         
         total_duration = sum(s['duration'] for s in scenes)
         print(f"\n   ✅ 분할 완료: {len(audio_paths)}개 파일")
+        print(f"   📏 전체 길이: {total_duration:.2f}초\n")
+        
+        return audio_paths
+
+    def generate_speech_individual(self, scenes: list, output_dir: str, voice: str = None):
+        """
+        [Individual 모드] 각 Scene별로 개별 TTS 생성.
+        문장마다 독립적으로 API를 호출하여 오디오 파일을 직접 생성합니다.
+        
+        Args:
+            scenes: 장면 목록 [{"scene_id": 1, "audio_text": "...", "duration": 5}, ...]
+            output_dir: 출력 디렉토리
+            voice: 음성 설정 (기본: config에서)
+        
+        Returns:
+            생성된 오디오 파일 경로 목록
+        """
+        voice = voice or TTS_VOICE_NAME
+        
+        # 0. 기존 오디오 파일 정리
+        import glob
+        for pattern in ["audio_scene_*.wav", "audio_scene_*.mp3"]:
+            for old_file in glob.glob(os.path.join(output_dir, pattern)):
+                try:
+                    os.unlink(old_file)
+                except Exception:
+                    pass
+        
+        print(f"\n   🎤 [Individual 모드 - 개별 오디오 생성 시작]")
+        print(f"   총 {len(scenes)}개 문장을 각각 생성합니다")
+        print(f"   Voice: {voice}\n")
+        
+        audio_paths = []
+        
+        for idx, scene in enumerate(scenes):
+            scene_text = scene['audio_text'].strip()
+            output_path = os.path.join(output_dir, f"audio_scene_{idx + 1}.wav")
+            
+            print(f"   🎤 Scene {idx + 1}/{len(scenes)}: {scene_text[:60]}{'...' if len(scene_text) > 60 else ''}")
+            
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    if attempt > 1:
+                        print(f"      🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
+                        time.sleep(RETRY_DELAY)
+                    
+                    response = self.client.models.generate_content(
+                        model=TTS_MODEL,
+                        contents=scene_text,
+                        config=types.GenerateContentConfig(
+                            response_modalities=["AUDIO"],
+                            speech_config=types.SpeechConfig(
+                                voice_config=types.VoiceConfig(
+                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                        voice_name=voice,
+                                    )
+                                )
+                            ),
+                        )
+                    )
+                    
+                    if (response.candidates and 
+                        response.candidates[0].content.parts and 
+                        response.candidates[0].content.parts[0].inline_data):
+                        
+                        audio_data = response.candidates[0].content.parts[0].inline_data.data
+                        self._save_wav_file(output_path, audio_data)
+                        
+                        scene['audio_path'] = output_path
+                        scene['duration'] = self.get_audio_duration(output_path)
+                        audio_paths.append(output_path)
+                        
+                        print(f"      ✅ 완료 ({scene['duration']:.2f}초)")
+                        break
+                    else:
+                        raise ValueError("No audio data in response")
+                        
+                except Exception as e:
+                    if attempt >= MAX_RETRIES:
+                        error_str = str(e)
+                        logger.error(f"Scene {idx + 1} TTS failed after {MAX_RETRIES} attempts: {e}")
+                        print(f"      ❌ Scene {idx + 1} 생성 실패: {error_str}")
+                        raise Exception(f"Scene {idx + 1} TTS 실패 (재시도 {MAX_RETRIES}회 초과): {error_str}")
+                    continue
+        
+        total_duration = sum(s['duration'] for s in scenes)
+        print(f"\n   ✅ 개별 생성 완료: {len(audio_paths)}개 파일")
         print(f"   📏 전체 길이: {total_duration:.2f}초\n")
         
         return audio_paths

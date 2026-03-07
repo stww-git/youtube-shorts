@@ -39,7 +39,7 @@ class RecipeVideoPipeline:
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
 
-    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", ken_burns_zoom: float = 0.05, show_title: bool = True, summary_card_show_title: bool = True, **kwargs):
+    def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", ken_burns_zoom: float = 0.05, show_title: bool = True, summary_card_show_title: bool = True, tts_mode: str = "unified", **kwargs):
         """
         Execute the video generation pipeline for Money Bite channel.
         """
@@ -91,6 +91,13 @@ class RecipeVideoPipeline:
             
             scenes = script_data.get('scenes', [])
             
+            # Post-process: 숫자/단위 뒤에 띄어쓰기된 단위 붙여쓰기 (예: 10만 원 -> 10만원)
+            import re
+            for scene in scenes:
+                if 'audio_text' in scene:
+                    # '만 원', '억 달러', '10 %' 등의 띄어쓰기 제거
+                    scene['audio_text'] = re.sub(r'([0-9만천백십억조])\s+(원|달러|퍼센트|프로|%)', r'\1\2', scene['audio_text'])
+
             if not scenes:
                 print_error("No scenes found in the script.")
                 print(script_json)
@@ -168,11 +175,15 @@ class RecipeVideoPipeline:
         # ==========================================
         # Step 4: 나레이션 오디오 생성
         # ==========================================
-        print_step(4, 6, "나레이션 오디오 생성", "🎤 Gemini TTS 통합 생성 중")
+        print_step(4, 6, "나레이션 오디오 생성", f"🎤 Gemini TTS ({tts_mode} 모드) 생성 중")
         
         try:
-            # 전체 대본을 한 번에 TTS 생성 후 분할 (톤 일관성 및 자연스러움 확보)
-            audio_paths = self.audio_gen.generate_speech_batch(scenes, output_dir, voice=tts_voice_name, tts_fallback=tts_fallback)
+            if tts_mode == "individual":
+                # Individual 모드: 문장별 개별 생성
+                audio_paths = self.audio_gen.generate_speech_individual(scenes, output_dir, voice=tts_voice_name)
+            else:
+                # Unified 모드 (기본값): 전체 대본을 한 번에 생성 후 무음 분할
+                audio_paths = self.audio_gen.generate_speech_unified(scenes, output_dir, voice=tts_voice_name, tts_fallback=tts_fallback)
         
             print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
             total_duration = sum(s['duration'] for s in scenes)

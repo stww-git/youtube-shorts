@@ -94,25 +94,23 @@ COLOR_URGENT = '#00BFFF'    # 하늘색 (행동 유도, 시간 관련)
 # 2. 키워드-카테고리 매핑 (한국어 금융 키워드)
 KEYWORD_CATEGORIES = {
     'WARNING': [
-        "절대", "하지마", "실수", "잘못", "위험", "폭락", "손해", "손실",
-        "빚", "부채", "사기", "함정", "비싸", "고평가", "공포", "패닉",
-        "망", "파산", "연체", "과소비",
+        "never", "don't", "mistake", "wrong", "risk", "crash", "loss", "lose",
+        "debt", "scam", "trap", "expensive", "overvalued", "fear", "panic",
+        "fail", "bankrupt", "delayed", "overspending", "warning",
     ],
     'EMPHASIS': [
-        "반드시", "무조건", "핵심", "비밀", "최고", "최대", "중요",
-        "기억", "명심", "필수", "100만", "1000만", "1억", "10억",
-        "퍼센트", "%", "원", "수익", "이자", "배당", "수익률",
-        "만원", "만 원", "천만", "조", "억",
+        "must", "core", "secret", "best", "max", "important",
+        "remember", "essential", "profit", "interest", "dividend", "yield", "critical",
     ],
     'SECRET': [
-        "팁", "비법", "전략", "법칙", "방법", "공식", "규칙",
-        "복리", "배당금", "인덱스", "포트폴리오", "분산", "ETF",
-        "투자", "재테크", "적립식", "자산", "펀드", "지수",
-        "주식", "채권", "부동산",
+        "tip", "strategy", "rule", "method", "formula",
+        "compound", "index", "portfolio", "diversify", "ETF",
+        "invest", "wealth", "accumulate", "asset", "fund",
+        "stock", "bond", "real estate",
     ],
     'URGENT': [
-        "지금", "오늘", "당장", "바로", "즉시", "빨리", "서둘러",
-        "시간", "일찍", "먼저", "시작", "자동이체",
+        "now", "today", "right now", "immediately", "fast", "hurry",
+        "time", "early", "first", "start", "urgent",
     ]
 }
 
@@ -139,7 +137,7 @@ def get_keyword_color(word: str, default_color: str = SUBTITLE_TEXT_COLOR) -> st
 SUBTITLE_IMPACT_COLOR = '#FFD700'  # Gold
 SUBTITLE_IMPACT_STROKE_WIDTH = 4
 
-SUBTITLE_IMPACT_KEYWORDS = ["절대", "반드시", "비밀", "기억", "법칙", "핵심"]
+SUBTITLE_IMPACT_KEYWORDS = ["never", "must", "secret", "remember", "rule", "core", "critical"]
 
 # Pop-in 하이라이트 색상 (동적 자막에서 최신 어절 강조)
 POPIN_HIGHLIGHT_COLOR = '#FFD700'
