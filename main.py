@@ -43,7 +43,7 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "money-bite-us"
+ACTIVE_CHANNEL = "money-bite-jp"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
@@ -113,6 +113,32 @@ CHANNELS = {
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
         "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
         "tts_style": "Speak at a slightly faster, energetic pace",  # TTS 속도/스타일 지시 (빈 문자열: 기본 속도) / unified 모드에서도 적용됨
+        "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
+
+        "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
+        "show_title": True,      # True: 전체 영상 상단에 제목 + 검은 배경 표시 / False: 제목 숨김
+        "summary_in_description": True,  # True: 핵심 정보를 YouTube 설명에 포함
+        "summary_card_duration": 2.0,  # 핵심 정보 카드 노출 시간 (초)
+        "parallel": False,        # True: 이미지 병렬 생성
+        "tts_fallback": False,  # True: TTS 실패 시 gTTS로 대체 / False: 바로 종료
+        "disclaimer": False,      # True: 면책 조항 추가
+        "bgm_enabled": False,     # True: 배경음악 사용
+        "bgm_volume": 0.1,       # 배경음악 볼륨 (0.0 ~ 1.0, 나레이션 대비 비율)
+        "bgm_file": "cooking.mp3", # assets/bgm/ 폴더 내 파일명
+    },
+
+    "money-bite-jp": {
+        "enabled": False,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": False,          # True: YouTube 업로드
+        "privacy": "public",      # public / unlisted / private
+        "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
+        "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
+        "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
+        "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
+        "tts_voice_name": "Aoede",  # Gemini TTS 음성 (Aoede가 일본어 자연스러움)
+        "tts_mode": "individual",  # unified / individual
+        "tts_style": "Speak naturally and energetically in Japanese",  # 일본어 자연스러운 톤
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
 
         "summary_card": True,    # True: 영상 끝에 핵심 정보 카드 추가
