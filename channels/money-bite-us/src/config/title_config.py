@@ -17,9 +17,15 @@ TITLE_FONT_PATH = os.path.join(FONT_DIR, "nanumsquare", "NanumSquareEB.ttf")
 TITLE_TEXT_COLOR = 'white'
 # 줄별 색상 설정 (None이면 기본 색상 사용)
 TITLE_LINE_COLORS = ['#FFFFFF', '#FFD54F']  # 1줄: White, 2줄: Warm Yellow
+
+# 제목 배경 색상 (RGB 튜플)
+# TITLE_BG_COLOR = (176, 212, 241)  # 파스텔 하늘색
+# TITLE_BG_COLOR = (135, 206, 235)  # 밝은 하늘색
+# TITLE_BG_COLOR = (74, 144, 217)   # 진한 하늘색
+TITLE_BG_COLOR = (0, 0, 0)        # 검정 (기본값)
 TITLE_STROKE_COLOR = 'black'
 TITLE_STROKE_WIDTH = 0  # 테두리 없음
-TITLE_FONT_SIZE = 100     # 기본 폰트 크기
+TITLE_FONT_SIZE = 120     # 기본 폰트 크기
 
 # 자간 설정 (단위: px)
 # 기준: 폰트 크기 100px 일 때
@@ -31,8 +37,8 @@ TITLE_LETTER_SPACING = 0
 TITLE_MAX_WIDTH = 800     # 최대 너비
 TITLE_LINE_HEIGHT = 1.0   # 줄간격 배수 (1.0 = 빼곡하게)
 
-TITLE_TOP_MARGIN = 110     # 제목 텍스트 Y 위치 (제목만 이동)
-TITLE_BG_TOP_MARGIN = 100  # 검은색 배경 높이 계산용 (배경 크기 조절)
+TITLE_TOP_MARGIN = 120     # 제목 텍스트 Y 위치 (제목만 이동)
+TITLE_BG_TOP_MARGIN = 90  # 검은색 배경 높이 계산용 (배경 크기 조절)
 
 # ============================================
 # 적응형 폰트 크기 설정 (Adaptive Font Sizing)

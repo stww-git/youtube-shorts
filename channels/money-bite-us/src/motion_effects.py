@@ -757,7 +757,7 @@ class MotionEffectsComposer:
         first_sentence = self._extract_first_sentence(video_title)
         print(f"   📌 제목 추가 중: {first_sentence[:30]}...")
         
-        from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, TITLE_TOP_MARGIN, TITLE_BG_TOP_MARGIN, get_adaptive_title_style
+        from config.title_config import TITLE_FONT_PATH, TITLE_LINE_COLORS, TITLE_TOP_MARGIN, TITLE_BG_TOP_MARGIN, TITLE_BG_COLOR, get_adaptive_title_style
         TOP_MARGIN = TITLE_BG_TOP_MARGIN
         title_font = TITLE_FONT_PATH
         title_text = first_sentence
@@ -820,7 +820,7 @@ class MotionEffectsComposer:
         
         bg_clip = ColorClip(
             size=(bg_width, bg_height),
-            color=(0, 0, 0),
+            color=TITLE_BG_COLOR,
             duration=final_video.duration
         )
         

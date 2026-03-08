@@ -19,7 +19,7 @@ TITLE_TEXT_COLOR = 'white'
 TITLE_LINE_COLORS = ['#FFFFFF', '#FFD54F']  # 1줄: White, 2줄: Warm Yellow
 TITLE_STROKE_COLOR = 'black'
 TITLE_STROKE_WIDTH = 0  # 테두리 없음
-TITLE_FONT_SIZE = 100     # 기본 폰트 크기
+TITLE_FONT_SIZE = 120     # 기본 폰트 크기
 
 # 자간 설정 (단위: px)
 # 기준: 폰트 크기 100px 일 때

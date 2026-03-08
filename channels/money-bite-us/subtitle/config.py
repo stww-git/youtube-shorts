@@ -68,10 +68,10 @@ MODE_SETTINGS = {
         "min_chunk_chars": 4,      # 짧은 어절 방지
     },
     "phrase": {
-        "font_size": 85,          # 구절이 길어지므로 약간 작게
+        "font_size": 75,          # 구절이 길어지므로 약간 작게
         "typing_speed": 0.3,
         "min_chunk_chars": 5,      # 한 구절 최소 5자
-        "max_width": 960,          # 전체 폭 활용
+        "max_width": 900,          # 전체 폭 활용
     },
 }
 
