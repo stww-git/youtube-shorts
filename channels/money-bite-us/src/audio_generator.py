@@ -169,7 +169,7 @@ class AudioGenerator:
                         
                         raise Exception(f"Gemini TTS failed after {MAX_RETRIES} retries: {error_str}")
 
-    def generate_speech_unified(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False):
+    def generate_speech_unified(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False, tts_style: str = ""):
         """
         [Unified 모드] 전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
         일관된 톤과 자연스러운 억양을 유지합니다.
@@ -199,7 +199,11 @@ class AudioGenerator:
         # 문장 구분에 가장 효과적임 (Silence 감지 용이)
         texts = [scene['audio_text'].strip() for scene in scenes]
         full_text = ' [medium pause] [medium pause] '.join(texts)
-        # full_text = f"<speak>{inner_text}</speak>"  # SSML Wrapper 제거
+        
+        # Director's Notes Pacing 적용
+        if tts_style:
+            full_text = f"### DIRECTOR'S NOTES\nPacing: {tts_style}\n#### TRANSCRIPT\n{full_text}"
+            print(f"   🎭 TTS Style: {tts_style}")
         
         try:
             from core.prompt_logger import get_prompt_logger
@@ -307,7 +311,7 @@ class AudioGenerator:
         
         return audio_paths
 
-    def generate_speech_individual(self, scenes: list, output_dir: str, voice: str = None):
+    def generate_speech_individual(self, scenes: list, output_dir: str, voice: str = None, tts_style: str = ""):
         """
         [Individual 모드] 각 Scene별로 개별 TTS 생성.
         문장마다 독립적으로 API를 호출하여 오디오 파일을 직접 생성합니다.
@@ -356,6 +360,11 @@ class AudioGenerator:
             scene_text = scene['audio_text'].strip()
             output_path = os.path.join(output_dir, f"audio_scene_{idx + 1}.wav")
             
+            # Director's Notes Pacing 적용
+            tts_input = scene_text
+            if tts_style:
+                tts_input = f"### DIRECTOR'S NOTES\nPacing: {tts_style}\n#### TRANSCRIPT\n{scene_text}"
+            
             print(f"   🎤 Scene {idx + 1}/{len(scenes)}: {scene_text[:60]}{'...' if len(scene_text) > 60 else ''}")
             
             for attempt in range(1, MAX_RETRIES + 1):
@@ -366,7 +375,7 @@ class AudioGenerator:
                     
                     response = self.client.models.generate_content(
                         model=TTS_MODEL,
-                        contents=scene_text,
+                        contents=tts_input,
                         config=types.GenerateContentConfig(
                             response_modalities=["AUDIO"],
                             speech_config=types.SpeechConfig(
