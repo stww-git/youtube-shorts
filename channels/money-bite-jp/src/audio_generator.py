@@ -252,7 +252,7 @@ class AudioGenerator:
                     if tts_fallback:
                         print(f"   🔄 gTTS (Google Translate TTS)로 대체합니다.")
                         try:
-                            tts = gTTS(text=full_text, lang='ko')
+                            tts = gTTS(text=full_text, lang='ja')
                             tts.save(temp_full_audio)
                             print(f"   ✅ gTTS 전체 오디오 생성 완료")
                             break

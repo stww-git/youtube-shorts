@@ -623,7 +623,7 @@ class MotionEffectsComposer:
             # Wrap text and calculate layout
             dummy_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
             
-            # 명시적 줄바꿈(\n) 처리: 먼저 줄 단위로 분리한 뒤, 각 줄 내부에서 단어 분리
+            # 명시적 줄바꿈(\n) 처리: 먼저 줄 단위로 분리한 뒤, 각 줄 내부에서 단어 단위(또는 문자 단위) 분리
             explicit_lines = text.split('\n')
             
             line_layouts = [] # Each element is a list of {'text': word, 'width': w, 'color': color}
@@ -632,43 +632,87 @@ class MotionEffectsComposer:
             space_width = dummy_draw.textbbox((0, 0), " ", font=font)[2] - dummy_draw.textbbox((0, 0), " ", font=font)[0]
             word_counter = 0  # 전체 단어 인덱스 추적 (하이라이트용)
             
+            # 모든 키워드 추출 (길이 역순 정렬)
+            from subtitle.config import KEYWORD_CATEGORIES
+            all_kws = []
+            if not style.get('skip_keyword_color'):
+                for kws in KEYWORD_CATEGORIES.values():
+                    all_kws.extend(kws)
+                all_kws.sort(key=len, reverse=True)
+            
             for line_text in explicit_lines:
-                words = line_text.split()
-                if not words:
+                if not line_text:
                     continue
                     
+                # Tokenize line_text into words, spaces, keywords, and CJK characters
+                tokens = []
+                idx = 0
+                while idx < len(line_text):
+                    matched_kw = None
+                    if all_kws:
+                        for kw in all_kws:
+                            if line_text.startswith(kw, idx):
+                                matched_kw = kw
+                                break
+                    if matched_kw:
+                        tokens.append(matched_kw)
+                        idx += len(matched_kw)
+                        continue
+                    
+                    c = line_text[idx]
+                    if c == ' ':
+                        tokens.append(' ')
+                        idx += 1
+                    elif ord(c) < 128 and c.isalnum():
+                        start = idx
+                        while idx < len(line_text) and ord(line_text[idx]) < 128 and line_text[idx].isalnum():
+                            idx += 1
+                        tokens.append(line_text[start:idx])
+                    else:
+                        tokens.append(c)
+                        idx += 1
+
                 current_line_words = []
                 current_line_width = 0
                 
-                for word in words:
-                    word_bbox = dummy_draw.textbbox((0, 0), word, font=font)
-                    word_width = word_bbox[2] - word_bbox[0]
+                for token in tokens:
+                    if token == ' ':
+                        if not current_line_words:
+                            continue  # 앞의 공백 무시
+                        word_width = space_width
+                    else:
+                        word_bbox = dummy_draw.textbbox((0, 0), token, font=font)
+                        word_width = word_bbox[2] - word_bbox[0]
                     
-                    # Check if adding this word exceeds max_width
-                    if current_line_words and (current_line_width + space_width + word_width > max_width):
-                        # Start a new line
+                    # 줄바꿈 판별
+                    if current_line_words and (current_line_width + word_width > max_width):
+                        if token == ' ':
+                            continue  # 새 줄 맨 앞 공백 무시
                         line_layouts.append(current_line_words)
                         current_line_words = []
                         current_line_width = 0
                     
-                    # Add word to current line
-                    keyword_color = get_keyword_color(word, text_color) if not style.get('skip_keyword_color') else text_color
-                    if not style.get('skip_keyword_color') and highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
+                    keyword_color = get_keyword_color(token, text_color) if not style.get('skip_keyword_color') else text_color
+                    
+                    if token != ' ' and not style.get('skip_keyword_color') and highlight_word_idx >= 0 and word_counter == highlight_word_idx and keyword_color == text_color:
                         color = POPIN_HIGHLIGHT_COLOR
                     else:
-                        color = keyword_color
-                    word_counter += 1
+                        color = keyword_color if token != ' ' else text_color
+                    
+                    if token != ' ':
+                        word_counter += 1
+                        
                     current_line_words.append({
-                        "text": word,
+                        "text": token,
                         "width": word_width,
                         "color": color
                     })
                     current_line_width += word_width
-                    if len(current_line_words) > 1:
-                        current_line_width += space_width
                 
                 # 각 명시적 줄의 끝에서 강제로 줄 분리
                 if current_line_words:
+                    if current_line_words[-1]['text'] == ' ':
+                        current_line_words.pop()
                     line_layouts.append(current_line_words)
             
             # Calculate total image size based on line_layouts
@@ -680,15 +724,12 @@ class MotionEffectsComposer:
             for line_data in line_layouts:
                 line_max_word_height = 0
                 line_total_width = 0
-                for i, word_info in enumerate(line_data):
+                for word_info in line_data:
                     # Recalculate bbox for height, as it might vary slightly
                     bbox = dummy_draw.textbbox((0, 0), word_info['text'], font=font)
                     h = bbox[3] - bbox[1]
                     line_max_word_height = max(line_max_word_height, h)
-                    
                     line_total_width += word_info['width']
-                    if i < len(line_data) - 1:
-                        line_total_width += space_width
                 
                 line_heights.append(line_max_word_height)
                 total_text_height += line_max_word_height
@@ -709,22 +750,18 @@ class MotionEffectsComposer:
             current_y = padding
             for line_idx, line_data in enumerate(line_layouts):
                 # Calculate total line width for centering
-                line_total_width = 0
-                for i, word_info in enumerate(line_data):
-                    line_total_width += word_info['width']
-                    if i < len(line_data) - 1:
-                        line_total_width += space_width
+                line_total_width = sum(w['width'] for w in line_data)
                         
                 # Center alignment
                 start_x = (img_width - line_total_width) // 2
                 current_x = start_x
                 
-                for i, word_info in enumerate(line_data):
+                for word_info in line_data:
                     word_text = word_info['text']
                     color = word_info['color']
                     
                     # Draw stroke
-                    if stroke_width > 0:
+                    if stroke_width > 0 and word_text.strip():
                         for dx in range(-stroke_width, stroke_width + 1):
                             for dy in range(-stroke_width, stroke_width + 1):
                                 if dx == 0 and dy == 0: continue
@@ -733,11 +770,10 @@ class MotionEffectsComposer:
                                 draw.text((current_x + dx, current_y + dy), word_text, font=font, fill=stroke_color)
                     
                     # Draw main text
-                    draw.text((current_x, current_y), word_text, font=font, fill=color)
+                    if word_text.strip():
+                        draw.text((current_x, current_y), word_text, font=font, fill=color)
                     
                     current_x += word_info['width']
-                    if i < len(line_data) - 1:
-                        current_x += space_width
                 
                 # Move to next line
                 current_y += line_heights[line_idx] + line_spacing

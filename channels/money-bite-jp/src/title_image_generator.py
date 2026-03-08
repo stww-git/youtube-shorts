@@ -101,7 +101,7 @@ class TitleGenerator:
         words = text.split()
         
         # 1. Check if it fits in one line
-        full_text = " ".join(words)
+        full_text = " ".join(words) if words else text
         total_text_width = get_text_width(full_text)
         
         if total_text_width <= max_width:
@@ -112,37 +112,50 @@ class TitleGenerator:
             best_split_index = -1
             min_width_diff = float('inf')
             
-            # Try splitting at every space
-            for i in range(1, len(words)):
-                line1_words = words[:i]
-                line2_words = words[i:]
+            if len(words) > 1:
+                # Try splitting at every space
+                for i in range(1, len(words)):
+                    line1 = " ".join(words[:i])
+                    line2 = " ".join(words[i:])
+                    
+                    diff = abs(get_text_width(line1) - get_text_width(line2))
+                    
+                    if diff < min_width_diff:
+                        min_width_diff = diff
+                        best_split_index = i
                 
-                line1 = " ".join(line1_words)
-                line2 = " ".join(line2_words)
-                
-                w1 = get_text_width(line1)
-                w2 = get_text_width(line2)
-                
-                # Check allowing max_width constraint (soft)
-                # Ideally both should be <= max_width, but balance is priority as per request
-                diff = abs(w1 - w2)
-                
-                if diff < min_width_diff:
-                    min_width_diff = diff
-                    best_split_index = i
-            
-            if best_split_index != -1:
-                lines = [
-                    " ".join(words[:best_split_index]),
-                    " ".join(words[best_split_index:])
-                ]
+                if best_split_index != -1:
+                    lines = [
+                        " ".join(words[:best_split_index]),
+                        " ".join(words[best_split_index:])
+                    ]
+                else:
+                    lines = [full_text]
             else:
-                # Fallback (shouldn't happen for >1 words)
-                lines = [full_text]
+                # Fallback for languages without spaces (like Japanese)
+                chars = list(full_text)
+                for i in range(1, len(chars)):
+                    line1 = "".join(chars[:i])
+                    line2 = "".join(chars[i:])
+                    
+                    diff = abs(get_text_width(line1) - get_text_width(line2))
+                    
+                    if diff < min_width_diff:
+                        min_width_diff = diff
+                        best_split_index = i
+                
+                if best_split_index != -1:
+                    lines = [
+                        "".join(chars[:best_split_index]),
+                        "".join(chars[best_split_index:])
+                    ]
+                else:
+                    lines = [full_text]
         
         # Calculate total image size
         line_height_px = int(font_size * line_height)
-        total_height = line_height_px * len(lines) + stroke_width * 2
+        # Add 40px padding to the bottom to prevent descender clipping for Japanese fonts
+        total_height = line_height_px * len(lines) + stroke_width * 2 + 40
         
         # Find max line width for image width
         max_line_width = max(get_text_width(line) for line in lines) if lines else max_width

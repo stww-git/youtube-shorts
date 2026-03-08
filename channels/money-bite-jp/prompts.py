@@ -149,19 +149,20 @@ IMAGE_GENERATION_PROMPT = """
 - Simple 2D cartoon / vector illustration style.
 - Thick, very clear, clean, and bold black outlines for all characters and objects.
 - Flat, solid colors. NO gradients, NO complex shading, NO 3D rendering, NO realism.
-- Characters: Extremely simple cartoon figures (e.g., round white faces, simple dot expressions, single-color suits/shirts).
+- Characters: An extremely simple, cute 2D cartoon animal mascot, specifically a white cat (or orange tabby cat) acting like a human. Round face, simple dot eyes, NO human skin, NO human hair.
 - Backgrounds: Detail-oriented but stylized 2D drawing (e.g., control rooms, maps, charts on screens) heavily using thick black line-art.
 - Color palette: Slightly muted but distinct colors (deep blues, greys, bright oranges, greens, reds).
 
 [금지 사항]
 - Text, Letters, Words, Numbers, Speech Bubbles (절대 금지. 어떤 글자표시도 넣지 마라)
 - 사실적인 사진 스타일, 3D 렌더링 스타일, 수채화, 실사 인물 (절대 금지)
+- Realistic fur(리얼한 털 묘사), 3D Pixar/Disney style, Anime style, realistic animals, human characters (절대 금지)
 - 그라데이션, 리얼한 명암 (절대 금지)
 
 ## 출력 형식 (JSON)
 대본의 scene 수에 맞춰 동일한 수의 이미지 프롬프트를 생성해라
 {{
-    "global_visual_style": "Simple 2D cartoon vector illustration in the style of Kurzgesagt, thick black outlines, flat solid colors, no gradients",
+    "global_visual_style": "Simple 2D cartoon vector illustration in the style of Kurzgesagt featuring a cute bipedal cat mascot, thick black outlines, flat solid colors, no gradients, no human characters",
     "scenes": [
         {{"scene_id": 1, "visual_description": "[영어 프롬프트 - 해당 문장을 시각화한 2D 만화 장면. 캐릭터, 배경, 핵심 소품 묘사]"}},
         {{"scene_id": 2, "visual_description": "[영어 프롬프트 - 해당 문장을 시각화한 2D 만화 장면. 캐릭터, 배경, 핵심 소품 묘사]"}},
