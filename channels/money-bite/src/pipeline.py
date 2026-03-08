@@ -92,7 +92,6 @@ class RecipeVideoPipeline:
             scenes = script_data.get('scenes', [])
             
             # Post-process: 숫자/단위 뒤에 띄어쓰기된 단위 붙여쓰기 (예: 10만 원 -> 10만원)
-            import re
             for scene in scenes:
                 if 'audio_text' in scene:
                     # '만 원', '억 달러', '10 %' 등의 띄어쓰기 제거
