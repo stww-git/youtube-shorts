@@ -129,8 +129,8 @@ CHANNELS = {
 
     "money-bite-jp": {
         "enabled": True,         # True: GitHub Actions 스케줄 실행
-        "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
+        "test_mode": True,        # False: 실제 이미지 생성
+        "upload": False,          # True: YouTube 업로드
         "privacy": "public",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식

@@ -32,13 +32,14 @@ FONT_DIR = os.path.join(os.getcwd(), "fonts")
 SUBTITLE_FONT_PATH = os.path.join(FONT_DIR, "nanumsquare", "NanumSquareB.ttf")
 
 # Subtitle width (with left/right margins)
-SUBTITLE_MAX_WIDTH = 960
+# Reduced width to avoid YouTube UI on the right
+SUBTITLE_MAX_WIDTH = 800
 
 # Default colors
 SUBTITLE_TEXT_COLOR = 'white'
 SUBTITLE_STROKE_COLOR = 'black'
 SUBTITLE_STROKE_WIDTH = 10
-SUBTITLE_FONT_SIZE = 78  # 한국어 폰트 크기 (가독성 최적화)
+SUBTITLE_FONT_SIZE = 70  # Reduced font size
 
 
 # ============================================
@@ -47,31 +48,31 @@ SUBTITLE_FONT_SIZE = 78  # 한국어 폰트 크기 (가독성 최적화)
 
 MODE_SETTINGS = {
     "static": {
-        "font_size": 120,
+        "font_size": 100,
         "typing_speed": 0.20,
         "min_chunk_chars": 0,      # 분리 불필요
         "max_width": 700,          # 줄바꿈 유도
     },
     "single": {
-        "font_size": 110,
+        "font_size": 100,
         "typing_speed": 0.3,
         "min_chunk_chars": 2,
     },
     "accumulate": {
-        "font_size": 110,
+        "font_size": 100,
         "typing_speed": 0.20,
         "min_chunk_chars": 2,
     },
     "stack": {
-        "font_size": 110,
+        "font_size": 100,
         "typing_speed": 0.5,
         "min_chunk_chars": 4,      # 짧은 어절 방지
     },
     "phrase": {
-        "font_size": 75,          # 구절이 길어지므로 약간 작게
+        "font_size": 70,          # 구절이 길어지므로 약간 작게
         "typing_speed": 0.3,
         "min_chunk_chars": 5,      # 한 구절 최소 5자
-        "max_width": 900,          # 전체 폭 활용
+        "max_width": 800,          # 전체 폭 넓이 줄임 (UI 회피)
     },
 }
 
