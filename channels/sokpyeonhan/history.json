@@ -1567,7 +1567,21 @@
       "category": "best",
       "url": "https://www.10000recipe.com/recipe/7072591",
       "used_at": "2026-03-08"
+    },
+    {
+      "recipe_id": "7070746",
+      "title": "슈크림라떼 만들기",
+      "category": "skipped",
+      "url": "https://www.10000recipe.com/recipe/7070746",
+      "used_at": "2026-03-09"
+    },
+    {
+      "recipe_id": "6844702",
+      "title": "달래장 만들 때 절대 이렇게 하지 마세요",
+      "category": "best",
+      "url": "https://www.10000recipe.com/recipe/6844702",
+      "used_at": "2026-03-09"
     }
   ],
-  "last_updated": "2026-03-08T22:27:51.774360"
+  "last_updated": "2026-03-09T05:16:16.497908"
 }
