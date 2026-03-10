@@ -2,7 +2,7 @@
 TEXT_MODEL = "gemini-3-flash-preview"
 TEXT_FALLBACK_MODEL = "gemini-2.5-flash"  # 기본 모델 실패 시 대안
 IMAGE_MODEL = "gemini-2.5-flash-image"
-IMAGE_FALLBACK_MODEL = "gemini-2.5-flash-image"  # 기본 모델 실패 시 대안 (None이면 비활성)
+IMAGE_FALLBACK_MODEL = "gemini-3.1-flash-image-preview"  # 기본 모델 실패 시 대안 (None이면 비활성)
 TTS_MODEL = "gemini-2.5-flash-preview-tts"  #"gemini-2.5-flash-preview-tts"
 
 # API 재시도 설정
