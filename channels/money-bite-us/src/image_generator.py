@@ -33,6 +33,7 @@ class ImageGenerator:
         # 모델 타입 자동 감지
         self.use_imagen = "imagen" in IMAGE_MODEL.lower()
         self.fallback_used_count = 0  # Fallback 모델 사용 횟수 추적
+        self.use_fallback_mode = False  # 메인 모델 실패 시 이후 장면은 Fallback으로 전환
         logger.info(f"ImageGenerator initialized with model: {IMAGE_MODEL} ({'Imagen' if self.use_imagen else 'Gemini'} mode)")
     
     def get_fallback_used_count(self):
@@ -181,6 +182,32 @@ class ImageGenerator:
         """
         enhanced_prompt = f"{prompt}, {style}{IMAGE_NEGATIVE_PROMPT}"
         
+        # Fallback 모드가 활성화되었으면 바로 Fallback 모델 사용
+        if self.use_fallback_mode and IMAGE_FALLBACK_MODEL:
+            current_model = IMAGE_FALLBACK_MODEL
+            print(f"\n   📝 [Scene {idx} 이미지 프롬프트] (Fallback 모드)")
+            print(f"   {'─'*46}")
+            print(f"   모델: {IMAGE_FALLBACK_MODEL} (Fallback 지속)")
+            print(f"   {enhanced_prompt}")
+            print(f"   {'─'*46}")
+            
+            try:
+                fallback_is_imagen = "imagen" in IMAGE_FALLBACK_MODEL.lower()
+                if fallback_is_imagen:
+                    self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_FALLBACK_MODEL)
+                else:
+                    fallback_image_size = IMAGE_SIZE if "3." in IMAGE_FALLBACK_MODEL else None
+                    self._generate_with_gemini(
+                        enhanced_prompt, output_path,
+                        model=IMAGE_FALLBACK_MODEL,
+                        image_size=fallback_image_size
+                    )
+                self.fallback_used_count += 1
+                return (idx, output_path, True, None)
+            except Exception as fallback_error:
+                logger.error(f"Fallback model failed for scene {idx}: {fallback_error}")
+                return (idx, None, False, f"Fallback: {fallback_error}")
+        
         # Print prompt for visibility
         api_type = "Imagen" if self.use_imagen else "Gemini"
         print(f"\n   📝 [Scene {idx} 이미지 프롬프트] ({api_type})")
@@ -214,13 +241,12 @@ class ImageGenerator:
                 # Try fallback model if configured
                 if IMAGE_FALLBACK_MODEL:
                     print(f"   ⚠️  기본 모델 실패, Fallback 모델({IMAGE_FALLBACK_MODEL}) 시도 중...")
+                    print(f"   🔄 이후 장면들도 Fallback 모델로 전환합니다.")
                     try:
-                        # Fallback 모델 타입에 맞는 API 방식 사용
                         fallback_is_imagen = "imagen" in IMAGE_FALLBACK_MODEL.lower()
                         if fallback_is_imagen:
                             self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_FALLBACK_MODEL)
                         else:
-                            # Fallback이 gemini-3.1 이상이면 image_size 적용
                             fallback_image_size = IMAGE_SIZE if "3." in IMAGE_FALLBACK_MODEL else None
                             self._generate_with_gemini(
                                 enhanced_prompt, output_path,
@@ -228,6 +254,7 @@ class ImageGenerator:
                                 image_size=fallback_image_size
                             )
                         self.fallback_used_count += 1
+                        self.use_fallback_mode = True  # 이후 장면은 Fallback으로 전환
                         print(f"   ✅ Fallback 모델로 성공!")
                         return (idx, output_path, True, None)
                     except Exception as fallback_error:
