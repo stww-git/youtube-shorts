@@ -53,6 +53,7 @@ Line 6: Real-world consequence (loss aversion trigger)
 
 Line 7: One-line takeaway
 - Summarize the lesson in one memorable sentence
+- MUST start with the word "Remember,"
 
 [Output Rules]
 - Exactly 7 lines
