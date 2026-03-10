@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,7 +7,10 @@ from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
 from config.model_config import IMAGE_MODEL, IMAGE_FALLBACK_MODEL
-from config.image_config import IMAGE_NEGATIVE_PROMPT, IMAGE_MAX_WORKERS
+from config.image_config import (
+    IMAGE_NEGATIVE_PROMPT, IMAGE_MAX_WORKERS,
+    IMAGE_SIZE, IMAGE_MAX_RETRIES, IMAGE_RETRY_BASE_DELAY, IMAGE_REQUEST_DELAY
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +28,7 @@ class ImageGenerator:
         if not self.api_key:
             logger.warning("GOOGLE_API_KEY not found.")
         self.client = genai.Client(api_key=self.api_key) if self.api_key else None
-        self.style_guide = "high quality, cinematic lighting, 9:16 aspect ratio vertical, consistent visual style"
+        self.style_guide = "simple 2D cartoon, flat colors, thick black outlines, 9:16 aspect ratio vertical, consistent visual style, no text"
         
         # 모델 타입 자동 감지
         self.use_imagen = "imagen" in IMAGE_MODEL.lower()
@@ -58,13 +62,20 @@ class ImageGenerator:
         else:
             raise Exception(f"No images generated from Imagen API (model: {model})")
 
-    def _generate_with_gemini(self, prompt: str, output_path: str) -> str:
+    def _generate_with_gemini(self, prompt: str, output_path: str, model: str = None, image_size: str = None) -> str:
         """Gemini API를 사용한 이미지 생성 (generate_content with IMAGE modality)"""
+        target_model = model or IMAGE_MODEL
+        # image_size는 gemini-3.1 이상만 지원, gemini-2.5는 미지원
+        img_config = types.ImageConfig(aspect_ratio="9:16")
+        if image_size:
+            img_config = types.ImageConfig(aspect_ratio="9:16", image_size=image_size)
+        
         response = self.client.models.generate_content(
-            model=IMAGE_MODEL,
+            model=target_model,
             contents=prompt,
             config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"]
+                response_modalities=["IMAGE"],
+                image_config=img_config
             )
         )
         
@@ -163,8 +174,9 @@ class ImageGenerator:
 
     def _generate_single_image(self, idx: int, prompt: str, output_path: str, style: str, audio_context: str = None):
         """
-        Helper method to generate a single image (for parallel processing).
+        Helper method to generate a single image.
         Automatically uses Imagen or Gemini based on model config.
+        Retries on 429 errors with exponential backoff.
         Tries fallback model if primary fails.
         """
         enhanced_prompt = f"{prompt}, {style}{IMAGE_NEGATIVE_PROMPT}"
@@ -173,34 +185,56 @@ class ImageGenerator:
         api_type = "Imagen" if self.use_imagen else "Gemini"
         print(f"\n   📝 [Scene {idx} 이미지 프롬프트] ({api_type})")
         print(f"   {'─'*46}")
+        print(f"   모델: {IMAGE_MODEL}")
         print(f"   {enhanced_prompt}")
         print(f"   {'─'*46}")
         
-        # Try primary model
-        try:
-            if self.use_imagen:
-                self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_MODEL)
-            else:
-                self._generate_with_gemini(enhanced_prompt, output_path)
-            
-            return (idx, output_path, True, None)
+        # Try primary model with retry on 429
+        for attempt in range(1, IMAGE_MAX_RETRIES + 1):
+            try:
+                if self.use_imagen:
+                    self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_MODEL)
+                else:
+                    self._generate_with_gemini(enhanced_prompt, output_path)
                 
-        except Exception as primary_error:
-            logger.error(f"Primary model failed for scene {idx}: {primary_error}")
-            
-            # Try fallback model if configured
-            if IMAGE_FALLBACK_MODEL:
-                print(f"   ⚠️  기본 모델 실패, Fallback 모델({IMAGE_FALLBACK_MODEL}) 시도 중...")
-                try:
-                    self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_FALLBACK_MODEL)
-                    self.fallback_used_count += 1  # Fallback 사용 카운트 증가
-                    print(f"   ✅ Fallback 모델로 성공!")
-                    return (idx, output_path, True, None)
-                except Exception as fallback_error:
-                    logger.error(f"Fallback model also failed for scene {idx}: {fallback_error}")
-                    return (idx, None, False, f"Primary: {primary_error}, Fallback: {fallback_error}")
-            else:
-                return (idx, None, False, str(primary_error))
+                return (idx, output_path, True, None)
+                    
+            except Exception as primary_error:
+                error_str = str(primary_error)
+                
+                # 429 에러면 지수 백오프 재시도
+                if "429" in error_str and attempt < IMAGE_MAX_RETRIES:
+                    wait_time = IMAGE_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                    print(f"   ⏳ Rate limit 초과, {wait_time}초 후 재시도... ({attempt}/{IMAGE_MAX_RETRIES})")
+                    time.sleep(wait_time)
+                    continue
+                
+                logger.error(f"Primary model failed for scene {idx}: {primary_error}")
+                
+                # Try fallback model if configured
+                if IMAGE_FALLBACK_MODEL:
+                    print(f"   ⚠️  기본 모델 실패, Fallback 모델({IMAGE_FALLBACK_MODEL}) 시도 중...")
+                    try:
+                        # Fallback 모델 타입에 맞는 API 방식 사용
+                        fallback_is_imagen = "imagen" in IMAGE_FALLBACK_MODEL.lower()
+                        if fallback_is_imagen:
+                            self._generate_with_imagen_model(enhanced_prompt, output_path, IMAGE_FALLBACK_MODEL)
+                        else:
+                            # Fallback이 gemini-3.1 이상이면 image_size 적용
+                            fallback_image_size = IMAGE_SIZE if "3." in IMAGE_FALLBACK_MODEL else None
+                            self._generate_with_gemini(
+                                enhanced_prompt, output_path,
+                                model=IMAGE_FALLBACK_MODEL,
+                                image_size=fallback_image_size
+                            )
+                        self.fallback_used_count += 1
+                        print(f"   ✅ Fallback 모델로 성공!")
+                        return (idx, output_path, True, None)
+                    except Exception as fallback_error:
+                        logger.error(f"Fallback model also failed for scene {idx}: {fallback_error}")
+                        return (idx, None, False, f"Primary: {primary_error}, Fallback: {fallback_error}")
+                else:
+                    return (idx, None, False, error_str)
 
     def generate_images_batch(self, prompts: list, output_dir: str, style_guide: str = None, audio_contexts: list = None, parallel: bool = True, max_workers: int = None):
         """
@@ -257,6 +291,10 @@ class ImageGenerator:
                         raise Exception(f"Image generation failed for Scene {idx}: {error}")
         else:
             for idx, prompt in enumerate(prompts, 1):
+                # Rate limit 방지를 위한 요청 간 딜레이
+                if idx > 1:
+                    time.sleep(IMAGE_REQUEST_DELAY)
+                
                 output_path = os.path.join(output_dir, f"scene_{idx}.png")
                 print(f"   [{idx}/{len(prompts)}] 이미지 생성 중...")
                 

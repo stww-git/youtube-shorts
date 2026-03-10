@@ -10,7 +10,7 @@ env_token_key: "REFRESH_TOKEN_MONEY_BITE_US"
 # 업로드 설정
 upload:
   # 제목 형식
-  title_format: "{title}"
+  title_format: "{title} #stocks #finance #investing"
   
   # 설명
   description: "30-second finance lessons 💰 Learn money smarts, one bite at a time!\n\n⚠️ Disclaimer: This content is for educational purposes only and is not investment advice. Always do your own research before making investment decisions.\n\n#finance #investing #stocks #money #financialliteracy #moneytips #economy #stockmarket #shorts"

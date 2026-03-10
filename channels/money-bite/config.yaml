@@ -10,7 +10,7 @@ env_token_key: "REFRESH_TOKEN_MONEY_BITE"
 # 업로드 설정
 upload:
   # 제목 형식
-  title_format: "{title}"
+  title_format: "{title} #주식 #금융 #투자"
   
   # 설명
   description: "매일 30초 금융 상식 💰 하루 한 개, 쉽고 빠르게 배우는 돈 공부!\n\n⚠️ 면책 조항: 본 콘텐츠는 교육 목적이며 투자 조언이 아닙니다. 투자 결정 전 반드시 본인의 판단 하에 진행해주세요.\n\n#금융 #투자 #주식 #재테크 #금융상식 #돈공부 #경제 #주식초보 #shorts"

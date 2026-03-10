@@ -10,7 +10,7 @@ env_token_key: "REFRESH_TOKEN_MONEY_BITE_JP"
 # 업로드 설정
 upload:
   # 제목 형식
-  title_format: "{title}"
+  title_format: "{title} #株式 #金融 #投資"
   
   # 설명
   description: "毎日30秒で学ぶ金融知識 💰 1日1本、簡単で素早く学べるお金の勉強！\n\n⚠️ 免責事項：本コンテンツは教育目的であり、投資に関するアドバイスではありません。投資のご判断は必ずご自身で行ってください。\n\n#金融 #投資 #株式 #資産運用 #お金の勉強 #経済 #株初心者 #積立投資 #moneybite #shorts"
