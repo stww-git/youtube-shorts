@@ -105,7 +105,7 @@ CHANNELS = {
     },
 
     "money-bite-us": {
-        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
+        "api_key_env": "GOOGLE_API_KEY_2",  # 사용할 API 키 환경변수명
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -132,7 +132,7 @@ CHANNELS = {
     },
 
     "money-bite-jp": {
-        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
+        "api_key_env": "GOOGLE_API_KEY_2",  # 사용할 API 키 환경변수명
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
