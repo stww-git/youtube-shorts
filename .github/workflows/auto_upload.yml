@@ -46,7 +46,7 @@ permissions:
 env:
   # 🔑 API 키 목록 - 채널별 할당은 main.py의 api_key_env에서 설정
   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-  # GOOGLE_API_KEY_2: ${{ secrets.GOOGLE_API_KEY_2 }}  # 추가 API 키 (필요 시 주석 해제)
+  GOOGLE_API_KEY_2: ${{ secrets.GOOGLE_API_KEY_2 }}  # 추가 API 키 (필요 시 주석 해제)
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
   CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
 
