@@ -7,6 +7,7 @@ YouTube Shorts 자동 생성 시스템
 import argparse
 import warnings
 import sys
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -50,6 +51,7 @@ ACTIVE_CHANNEL = "test-channel-trial1"
 #    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
 CHANNELS = {
     "sokpyeonhan": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명 (GitHub Secrets)
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -76,6 +78,7 @@ CHANNELS = {
     },
 
     "money-bite": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -102,6 +105,7 @@ CHANNELS = {
     },
 
     "money-bite-us": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -128,6 +132,7 @@ CHANNELS = {
     },
 
     "money-bite-jp": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": True,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -154,6 +159,7 @@ CHANNELS = {
     },
 
     "test-channel-trial1": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": False,          # True: 스케줄 실행
         "test_mode": False,        # True: 테스트 모드
         "upload": False,          # True: 업로드
@@ -172,6 +178,7 @@ CHANNELS = {
         "tts_voice_name": "Kore",
     },
     "family-health-kr": {
+        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
         "upload": True,          # True: YouTube 업로드
@@ -280,6 +287,15 @@ def main():
         print("   📁 [LOCAL] 영상 생성만 진행\n")
     
     check_environment()
+    
+    # 채널별 API 키 설정
+    api_key_env = channel_settings.get("api_key_env", "GOOGLE_API_KEY")
+    api_key = os.getenv(api_key_env)
+    if api_key:
+        os.environ["GOOGLE_API_KEY"] = api_key
+        print(f"   🔑 API 키: {api_key_env} 사용")
+    else:
+        print(f"   ⚠️  {api_key_env} 환경변수가 설정되지 않았습니다.")
     
     # 채널별 Pipeline 로드 및 실행
     try:
