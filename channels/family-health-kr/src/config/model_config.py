@@ -4,6 +4,7 @@ TEXT_FALLBACK_MODEL = "gemini-2.5-flash-lite"  # 기본 모델 실패 시 대안
 IMAGE_MODEL = "gemini-3-pro-image-preview" #"gemini-2.5-flash-image"
 IMAGE_FALLBACK_MODEL = "gemini-3.1-flash-image-preview"  # 기본 모델 실패 시 대안 (None이면 비활성)
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
+TTS_FALLBACK_MODEL = "gemini-2.5-pro-preview-tts"  # TTS 실패 시 대안 (None이면 비활성)
 
 # API 재시도 설정
 MAX_RETRIES = 3

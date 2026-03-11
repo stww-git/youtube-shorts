@@ -7,6 +7,10 @@ from gtts import gTTS
 from google import genai
 from google.genai import types
 from config.model_config import TTS_MODEL, MAX_RETRIES, RETRY_DELAY
+try:
+    from config.model_config import TTS_FALLBACK_MODEL
+except ImportError:
+    TTS_FALLBACK_MODEL = None
 from config.audio_config import TTS_VOICE_NAME
 
 logger = logging.getLogger(__name__)
@@ -17,6 +21,8 @@ class AudioGenerator:
         if not self.api_key:
             logger.warning("GOOGLE_API_KEY not found.")
         self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        self.use_tts_fallback_mode = False  # 메인 TTS 실패 시 이후 Fallback으로 전환
+        self.tts_fallback_count = 0  # Fallback 사용 횟수
 
     def get_audio_duration(self, audio_path: str) -> float:
         """Get the duration of an audio file in seconds."""
@@ -249,6 +255,38 @@ class AudioGenerator:
                 if attempt >= MAX_RETRIES:
                     print(f"   ⚠️  Gemini TTS 실패: {e}")
                     
+                    # Fallback TTS 모델 시도
+                    if TTS_FALLBACK_MODEL:
+                        print(f"   🔄 Fallback TTS 모델({TTS_FALLBACK_MODEL})로 시도합니다.")
+                        try:
+                            response = self.client.models.generate_content(
+                                model=TTS_FALLBACK_MODEL,
+                                contents=full_text,
+                                config=types.GenerateContentConfig(
+                                    response_modalities=["AUDIO"],
+                                    speech_config=types.SpeechConfig(
+                                        voice_config=types.VoiceConfig(
+                                            prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                                voice_name=voice,
+                                            )
+                                        )
+                                    ),
+                                )
+                            )
+                            if (response.candidates and 
+                                response.candidates[0].content.parts and 
+                                response.candidates[0].content.parts[0].inline_data):
+                                audio_data = response.candidates[0].content.parts[0].inline_data.data
+                                self._save_wav_file(temp_full_audio, audio_data)
+                                self.tts_fallback_count += 1
+                                print(f"   ✅ Fallback TTS 모델로 전체 오디오 생성 완료")
+                                break
+                            else:
+                                raise ValueError("No audio data in fallback response")
+                        except Exception as fallback_e:
+                            print(f"   ⚠️  Fallback TTS도 실패: {fallback_e}")
+                    
+                    # gTTS fallback (기존 로직 유지)
                     if tts_fallback:
                         print(f"   🔄 gTTS (Google Translate TTS)로 대체합니다.")
                         try:
@@ -257,7 +295,7 @@ class AudioGenerator:
                             print(f"   ✅ gTTS 전체 오디오 생성 완료")
                             break
                         except Exception as gtts_e:
-                            raise Exception(f"모든 TTS 생성 실패 (Gemini: {e}, gTTS: {gtts_e})")
+                            raise Exception(f"모든 TTS 생성 실패 (Gemini: {e}, Fallback: TTS_FALLBACK_MODEL, gTTS: {gtts_e})")
                     else:
                         raise Exception(f"Gemini TTS 실패 (재시도 {MAX_RETRIES}회 초과): {e}")
                 continue
@@ -339,6 +377,12 @@ class AudioGenerator:
             
             print(f"   🎤 Scene {idx + 1}/{len(scenes)}: {scene_text[:60]}{'...' if len(scene_text) > 60 else ''}")
             
+            # Fallback 모드가 활성화된 경우 바로 Fallback 모델 사용
+            current_tts_model = TTS_MODEL
+            if self.use_tts_fallback_mode and TTS_FALLBACK_MODEL:
+                current_tts_model = TTS_FALLBACK_MODEL
+                print(f"      🔄 Fallback 모델 사용: {TTS_FALLBACK_MODEL}")
+            
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
                     if attempt > 1:
@@ -346,7 +390,7 @@ class AudioGenerator:
                         time.sleep(RETRY_DELAY)
                     
                     response = self.client.models.generate_content(
-                        model=TTS_MODEL,
+                        model=current_tts_model,
                         contents=tts_input,
                         config=types.GenerateContentConfig(
                             response_modalities=["AUDIO"],
@@ -371,6 +415,8 @@ class AudioGenerator:
                         scene['duration'] = self.get_audio_duration(output_path)
                         audio_paths.append(output_path)
                         
+                        if self.use_tts_fallback_mode:
+                            self.tts_fallback_count += 1
                         print(f"      ✅ 완료 ({scene['duration']:.2f}초)")
                         break
                     else:
@@ -380,8 +426,51 @@ class AudioGenerator:
                     if attempt >= MAX_RETRIES:
                         error_str = str(e)
                         logger.error(f"Scene {idx + 1} TTS failed after {MAX_RETRIES} attempts: {e}")
-                        print(f"      ❌ Scene {idx + 1} 생성 실패: {error_str}")
-                        raise Exception(f"Scene {idx + 1} TTS 실패 (재시도 {MAX_RETRIES}회 초과): {error_str}")
+                        
+                        # Fallback 모드가 아니고 Fallback 모델이 있으면 시도
+                        if not self.use_tts_fallback_mode and TTS_FALLBACK_MODEL:
+                            print(f"      ⚠️  메인 TTS 실패, Fallback 모델({TTS_FALLBACK_MODEL}) 시도 중...")
+                            print(f"      🔄 이후 장면들도 Fallback 모델로 전환합니다.")
+                            try:
+                                response = self.client.models.generate_content(
+                                    model=TTS_FALLBACK_MODEL,
+                                    contents=tts_input,
+                                    config=types.GenerateContentConfig(
+                                        response_modalities=["AUDIO"],
+                                        speech_config=types.SpeechConfig(
+                                            voice_config=types.VoiceConfig(
+                                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                                    voice_name=voice,
+                                                )
+                                            )
+                                        ),
+                                    )
+                                )
+                                
+                                if (response.candidates and 
+                                    response.candidates[0].content.parts and 
+                                    response.candidates[0].content.parts[0].inline_data):
+                                    
+                                    audio_data = response.candidates[0].content.parts[0].inline_data.data
+                                    self._save_wav_file(output_path, audio_data)
+                                    
+                                    scene['audio_path'] = output_path
+                                    scene['duration'] = self.get_audio_duration(output_path)
+                                    audio_paths.append(output_path)
+                                    
+                                    self.use_tts_fallback_mode = True  # 이후 장면은 Fallback
+                                    self.tts_fallback_count += 1
+                                    print(f"      ✅ Fallback 모델로 성공! ({scene['duration']:.2f}초)")
+                                    break
+                                else:
+                                    raise ValueError("No audio data in fallback response")
+                            except Exception as fallback_e:
+                                logger.error(f"Fallback TTS also failed for scene {idx + 1}: {fallback_e}")
+                                print(f"      ❌ Scene {idx + 1} 생성 실패 (Primary + Fallback): {error_str}")
+                                raise Exception(f"Scene {idx + 1} TTS 실패 (Primary: {error_str}, Fallback: {fallback_e})")
+                        else:
+                            print(f"      ❌ Scene {idx + 1} 생성 실패: {error_str}")
+                            raise Exception(f"Scene {idx + 1} TTS 실패 (재시도 {MAX_RETRIES}회 초과): {error_str}")
                     continue
         
         total_duration = sum(s['duration'] for s in scenes)
