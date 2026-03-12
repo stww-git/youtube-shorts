@@ -61,7 +61,7 @@ CHANNELS = {
         "ken_burns_effect": True,      # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
         "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
-        "tts_style": "Speak at a slightly faster, energetic pace",  # TTS 속도/스타일 지시 (빈 문자열: 기본 속도) / unified 모드에서도 적용됨
+        "tts_style": "Speak at a slightly faster",  # TTS 속도/스타일 지시 (빈 문자열: 기본 속도) / unified 모드에서도 적용됨
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
         "summary_card_show_title": False,  # True: 핵심카드에도 제목 표시 / False: 핵심카드에서 제목 숨김
