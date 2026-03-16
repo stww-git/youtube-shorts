@@ -357,7 +357,7 @@ class RecipeVideoPipeline:
                     # client_secrets.json 파일 경로
                     client_secrets_file = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'client_secrets.json')
                     if not os.path.exists(client_secrets_file):
-                        client_secrets_file = os.path.join(os.getcwd(), 'client_secrets.json')
+                        client_secrets_file = None  # 환경변수에서 CLIENT_ID/CLIENT_SECRET 읽기
                     
                     # refresh_token을 반환하는 함수 생성
                     def get_token():
