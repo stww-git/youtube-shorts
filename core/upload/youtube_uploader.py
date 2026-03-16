@@ -39,25 +39,35 @@ class YouTubeUploader:
             if refresh_token:
                 import json
                 
-                # client_id, client_secret 로드
+                client_id = None
+                client_secret = None
+                token_uri = "https://oauth2.googleapis.com/token"
+                
+                # client_secrets.json 파일에서 로드 시도
                 try:
-                    with open(self.client_secrets_file, 'r', encoding='utf-8') as f:
-                        client_secrets = json.load(f)
-                        web_config = client_secrets.get('installed', client_secrets.get('web', {}))
-                        client_id = web_config.get('client_id')
-                        client_secret = web_config.get('client_secret')
-                        token_uri = web_config.get('token_uri', "https://oauth2.googleapis.com/token")
-                        
-                        if client_id and client_secret:
-                            creds = Credentials(
-                                token=None,
-                                refresh_token=refresh_token,
-                                token_uri=token_uri,
-                                client_id=client_id,
-                                client_secret=client_secret
-                            )
+                    if self.client_secrets_file and os.path.exists(self.client_secrets_file):
+                        with open(self.client_secrets_file, 'r', encoding='utf-8') as f:
+                            client_secrets = json.load(f)
+                            web_config = client_secrets.get('installed', client_secrets.get('web', {}))
+                            client_id = web_config.get('client_id')
+                            client_secret = web_config.get('client_secret')
+                            token_uri = web_config.get('token_uri', token_uri)
                 except Exception as e:
-                    logger.error(f"Error loading client secrets: {e}")
+                    logger.warning(f"client_secrets.json 로드 실패: {e}")
+                
+                # 파일에서 못 읽었으면 환경변수에서 읽기
+                if not client_id or not client_secret:
+                    client_id = os.getenv('CLIENT_ID')
+                    client_secret = os.getenv('CLIENT_SECRET')
+                
+                if client_id and client_secret:
+                    creds = Credentials(
+                        token=None,
+                        refresh_token=refresh_token,
+                        token_uri=token_uri,
+                        client_id=client_id,
+                        client_secret=client_secret
+                    )
         
         # 2. Creds 파일이 있고 유효하면 사용 (fallback)
         if not creds and self.credentials_file and os.path.exists(self.credentials_file):
