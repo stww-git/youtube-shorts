@@ -15,7 +15,7 @@ from typing import Optional, Any
 # 프로젝트 루트 기준 경로 (core/ 폴더의 상위)
 PROJECT_ROOT = Path(__file__).parent.parent
 CHANNELS_DIR = PROJECT_ROOT / "channels"
-DEFAULTS_DIR = PROJECT_ROOT / "defaults"
+SHARED_DIR = PROJECT_ROOT / "shared"
 
 
 def list_channels() -> list[dict]:
@@ -79,7 +79,7 @@ def get_channel_prompts(channel_id: str):
     Returns:
         프롬프트 모듈 (RECIPE_SCRIPT_GENERATION_PROMPT 등 포함)
     """
-    import defaults.prompts as default_prompts
+    import shared.prompts as default_prompts
     
     config = get_channel_config(channel_id)
     if not config:
@@ -288,7 +288,7 @@ def get_channel_module(channel_id: str, module_name: str) -> Any:
     채널별 모듈을 동적으로 로드합니다.
     
     채널 폴더에 해당 모듈이 있으면 그것을 사용하고,
-    없으면 defaults/ 폴더의 기본 모듈을 사용합니다.
+    없으면 shared/ 폴더의 공통 모듈을 사용합니다.
     
     Args:
         channel_id: 채널 폴더 이름 (예: "sokpyeonhan")
@@ -300,27 +300,32 @@ def get_channel_module(channel_id: str, module_name: str) -> Any:
     # 채널별 모듈 경로
     channel_module_path = CHANNELS_DIR / channel_id / "src" / f"{module_name}.py"
     
-    # defaults 모듈 경로
-    default_module_path = DEFAULTS_DIR / f"{module_name}.py"
+    # shared 공통 모듈 경로
+    shared_module_path = SHARED_DIR / f"{module_name}.py"
     
     # 채널별 모듈이 있으면 우선 사용
     if channel_module_path.exists():
         module_path = channel_module_path
         full_module_name = f"channels.{channel_id}.src.{module_name}"
-    elif default_module_path.exists():
-        module_path = default_module_path
-        full_module_name = f"defaults.{module_name}"
+    elif shared_module_path.exists():
+        module_path = shared_module_path
+        full_module_name = f"shared.{module_name}"
     else:
-        raise FileNotFoundError(f"Module '{module_name}' not found in channel '{channel_id}' or defaults/")
+        raise FileNotFoundError(f"Module '{module_name}' not found in channel '{channel_id}' or shared/")
     
     try:
         spec = importlib.util.spec_from_file_location(full_module_name, module_path)
         module = importlib.util.module_from_spec(spec)
         
-        # 모듈의 부모 디렉토리를 sys.path에 추가 (import 해결용)
-        parent_dir = str(module_path.parent)
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
+        # 채널 src 디렉토리를 sys.path에 추가 (config 등 import 해결용)
+        channel_src_dir = str(CHANNELS_DIR / channel_id / "src")
+        if channel_src_dir not in sys.path:
+            sys.path.insert(0, channel_src_dir)
+        
+        # 채널 루트 디렉토리를 sys.path에 추가 (prompts.py 등 import 해결용)
+        channel_root_dir = str(CHANNELS_DIR / channel_id)
+        if channel_root_dir not in sys.path:
+            sys.path.insert(0, channel_root_dir)
         
         spec.loader.exec_module(module)
         return module

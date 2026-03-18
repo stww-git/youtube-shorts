@@ -1,23 +1,27 @@
 """
-레시피 대본 생성기 모듈
+이미지 프롬프트 생성기
 
-요리 레시피를 바탕으로 YouTube Shorts 대본을 생성합니다.
+제목과 대본을 바탕으로 영어 이미지 프롬프트를 생성합니다.
 """
 
 import os
+import sys
 import time
 import logging
+
+# 채널 루트의 prompts.py 사용
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from google import genai
 from google.genai import types
-from config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
-from prompts import SCRIPT_GENERATION_PROMPT
-from core.utils import format_ingredients, format_steps
+from shared.config.model_config import TEXT_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from prompts import IMAGE_GENERATION_PROMPT
 
 logger = logging.getLogger(__name__)
 
 
-class RecipeScriptGenerator:
-    """요리 레시피 기반 대본 생성기"""
+class ImagePromptGenerator:
+    """제목과 대본을 바탕으로 영어 이미지 프롬프트를 생성하는 클래스"""
     
     def __init__(self):
         self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
@@ -35,36 +39,40 @@ class RecipeScriptGenerator:
         """Return total API calls made."""
         return self.api_call_count
 
-    def generate_script(self, recipe: dict) -> str:
+    def generate_image_prompts(self, title: str, scenes: list) -> str:
         """
-        레시피를 바탕으로 8줄 구조의 대본을 생성합니다.
+        제목과 대본(scenes)을 바탕으로 영어 이미지 프롬프트를 생성합니다.
         
         Args:
-            recipe: 레시피 딕셔너리 {title, ingredients, steps, ...}
+            title: 영상 제목
+            scenes: 장면 목록 [{"scene_id": 1, "audio_text": "...", "duration": 7}, ...]
             
         Returns:
-            JSON 형식의 대본 문자열 (실패 시 None)
+            JSON 형식의 이미지 프롬프트 문자열 (실패 시 None)
         """
-        title = recipe.get('title', '요리')
-        steps = format_steps(recipe.get('steps', []))
+        # 대본 텍스트 조합
+        script_text = "\n".join([
+            f"Scene {s['scene_id']}: {s['audio_text']}"
+            for s in scenes
+        ])
         
-        prompt = SCRIPT_GENERATION_PROMPT.format(
+        prompt = IMAGE_GENERATION_PROMPT.format(
             title=title,
-            steps=steps
+            script_text=script_text
         )
         
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                logger.info(f"Generating recipe script for: {title}")
+                logger.info(f"Generating image prompts for title: {title}")
                 if attempt == 1:
-                    print(f"\n--- [DEBUG] Recipe Script Generation ---")
-                    print(f"   레시피: {title}")
-                    print(f"   조리단계: {len(recipe.get('steps', []))}개")
+                    print(f"\n--- [DEBUG] Image Prompt Generation ---")
+                    print(f"   제목: {title}")
+                    print(f"   장면 수: {len(scenes)}")
                     print(f"----------------------------------------")
                 else:
                     print(f"   🔄 재시도 중... ({attempt}/{MAX_RETRIES})")
                 
-                self._increment_api_call("Recipe Script Generation")
+                self._increment_api_call("Image Prompt Generation")
                 response = self.client.models.generate_content(
                     model=TEXT_MODEL,
                     contents=[prompt],
@@ -78,15 +86,15 @@ class RecipeScriptGenerator:
                 error_str = str(e)
                 
                 if attempt < MAX_RETRIES:
-                    logger.warning(f"Recipe script generation failed (attempt {attempt}/{MAX_RETRIES}): {e}")
+                    logger.warning(f"Image prompt generation failed (attempt {attempt}/{MAX_RETRIES}): {e}")
                     print(f"\n   ⚠️  [에러 발생] 재시도 대기 중... ({RETRY_DELAY}초)")
                     print(f"   원인: {error_str[:80]}...")
                     time.sleep(RETRY_DELAY)
                     continue
                 else:
-                    logger.error(f"Recipe script generation failed after {MAX_RETRIES} attempts: {e}")
+                    logger.error(f"Image prompt generation failed after {MAX_RETRIES} attempts: {e}")
                     print(f"\n{'❌'*25}")
-                    print(f"  ❌ [치명적 에러] 대본 생성 실패")
+                    print(f"  ❌ [치명적 에러] 이미지 프롬프트 생성 실패")
                     print(f"{'❌'*25}")
                     print(f"   {MAX_RETRIES}번 재시도 모두 실패")
                     print(f"   원인: {error_str}")
@@ -98,12 +106,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
     
-    generator = RecipeScriptGenerator()
+    generator = ImagePromptGenerator()
     # Test usage
-    # test_recipe = {
-    #     "title": "시금치무침",
-    #     "ingredients": [{"name": "시금치", "amount": "1단"}, {"name": "소금", "amount": "1/2스푼"}],
-    #     "steps": [{"step": 1, "description": "시금치를 깨끗이 씻어주세요"}]
-    # }
-    # script = generator.generate_script(test_recipe)
-    # print(script)
+    # prompts = generator.generate_image_prompts("테스트 제목", [{"scene_id": 1, "audio_text": "테스트", "duration": 3}])
+    # print(prompts)

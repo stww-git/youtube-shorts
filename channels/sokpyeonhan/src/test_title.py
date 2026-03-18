@@ -13,7 +13,7 @@ PROJECT_ROOT = CHANNEL_SRC_DIR.parent.parent.parent
 sys.path.insert(0, str(CHANNEL_SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from title_image_generator import create_title_image
+from shared.title_image_generator import create_title_image
 
 # 고정 샘플 문장들
 SAMPLE_TITLES = [

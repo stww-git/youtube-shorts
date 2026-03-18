@@ -10,7 +10,7 @@ import os
 import logging
 import tempfile
 from PIL import Image, ImageDraw, ImageFont
-from config.model_config import VIDEO_WIDTH
+from shared.config.model_config import VIDEO_WIDTH
 from config.title_config import (
     TITLE_FONT_PATH, 
     TITLE_FONT_SIZE,

@@ -6,12 +6,12 @@ import time
 from gtts import gTTS
 from google import genai
 from google.genai import types
-from config.model_config import TTS_MODEL, MAX_RETRIES, RETRY_DELAY
+from shared.config.model_config import TTS_MODEL, MAX_RETRIES, RETRY_DELAY
 try:
-    from config.model_config import TTS_FALLBACK_MODEL
+    from shared.config.model_config import TTS_FALLBACK_MODEL
 except ImportError:
     TTS_FALLBACK_MODEL = None
-from config.audio_config import TTS_VOICE_NAME
+from shared.config.audio_config import TTS_VOICE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +191,7 @@ class AudioGenerator:
         voice = voice or TTS_VOICE_NAME
         
 
+
         # 0. 기존 오디오 파일 정리 (WAV만 사용, MP3 제거)
         import glob
         for pattern in ["audio_scene_*.wav", "audio_scene_*.mp3"]:
@@ -336,7 +337,7 @@ class AudioGenerator:
         
         return audio_paths
 
-    def generate_speech_individual(self, scenes: list, output_dir: str, voice: str = None, tts_style: str = "", test_mode: bool = False):
+    def generate_speech_individual(self, scenes: list, output_dir: str, voice: str = None, tts_style: str = ""):
         """
         [Individual 모드] 각 Scene별로 개별 TTS 생성.
         문장마다 독립적으로 API를 호출하여 오디오 파일을 직접 생성합니다.
@@ -345,7 +346,6 @@ class AudioGenerator:
             scenes: 장면 목록 [{"scene_id": 1, "audio_text": "...", "duration": 5}, ...]
             output_dir: 출력 디렉토리
             voice: 음성 설정 (기본: config에서)
-            test_mode: True면 gTTS로 즉시 생성
         
         Returns:
             생성된 오디오 파일 경로 목록
@@ -508,7 +508,7 @@ class AudioGenerator:
         chunks = None
         
         # 단계적으로 silence threshold 조정
-        from config.audio_config import SILENCE_CONFIGS
+        from shared.config.audio_config import SILENCE_CONFIGS
         silence_configs = SILENCE_CONFIGS
         
         for config in silence_configs:

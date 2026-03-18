@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from config.model_config import IMAGE_MODEL, IMAGE_FALLBACK_MODEL
+from shared.config.model_config import IMAGE_MODEL, IMAGE_FALLBACK_MODEL
 from config.image_config import (
     IMAGE_NEGATIVE_PROMPT, IMAGE_MAX_WORKERS,
     IMAGE_SIZE, IMAGE_MAX_RETRIES, IMAGE_RETRY_BASE_DELAY, IMAGE_REQUEST_DELAY

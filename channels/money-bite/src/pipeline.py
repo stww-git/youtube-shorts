@@ -6,9 +6,9 @@ import logging
 from topic_generator import TopicGenerator
 from title_generator import TitleGenerator
 from script_generator import ScriptGenerator
-from image_prompt_generator import ImagePromptGenerator
-from image_generator import ImageGenerator
-from audio_generator import AudioGenerator
+from shared.image_prompt_generator import ImagePromptGenerator
+from shared.image_generator import ImageGenerator
+from shared.audio_generator import AudioGenerator
 from motion_effects import MotionEffectsComposer
 from core.utils import (
     print_header, print_step, print_substep, print_success, 
@@ -40,7 +40,7 @@ class RecipeVideoPipeline:
         print_success("All modules initialized.")
         
         # 모델 설정 출력
-        from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL, TTS_FALLBACK_MODEL
+        from shared.config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL, TTS_FALLBACK_MODEL
         print(f"\n   {'─'*50}")
         print(f"   📦 사용 모델 설정")
         print(f"   {'─'*50}")
@@ -364,7 +364,7 @@ class RecipeVideoPipeline:
             else:
                 try:
                     from core.upload.youtube_uploader import YouTubeUploader
-                    from config.upload_config import (
+                    from shared.config.upload_config import (
                         UPLOAD_TITLE_FORMAT as DEFAULT_TITLE_FORMAT,
                         UPLOAD_DESCRIPTION_TEMPLATE as DEFAULT_DESCRIPTION,
                         DEFAULT_PRIVACY_STATUS, MADE_FOR_KIDS
@@ -432,7 +432,7 @@ class RecipeVideoPipeline:
         print_header("🎉 작업 완료!")
         
         # 사용된 모델 정보 가져오기
-        from config.model_config import TEXT_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL
+        from shared.config.model_config import TEXT_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL
         
         print(f"""
        📁 출력 폴더: {output_dir}

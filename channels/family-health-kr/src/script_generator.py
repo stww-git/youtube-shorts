@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from google import genai
 from google.genai import types
-from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from shared.config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
 from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
 from core.utils import format_ingredients, format_steps
 

@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from google import genai
 from google.genai import types
-from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
+from shared.config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY, TEMPERATURE
 from prompts import SCRIPT_GENERATION_PROMPT, SUMMARY_GENERATION_PROMPT
 from subtitle.prompts import get_subtitle_prompt
 from subtitle.config import get_mode_setting

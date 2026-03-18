@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # 로컬 config import
-from config.model_config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
+from shared.config.model_config import VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS, VIDEO_CODEC, AUDIO_CODEC, VIDEO_PRESET, VIDEO_THREADS
 from title_image_generator import create_title_image
 
 logger = logging.getLogger(__name__)
