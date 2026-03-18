@@ -1,10 +1,10 @@
-# Gemini API 모델 설정
-TEXT_MODEL = "gemini-2.5-flash"
-TEXT_FALLBACK_MODEL = "gemini-2.5-flash-lite"  # 기본 모델 실패 시 대안
-IMAGE_MODEL = "gemini-2.5-flash-image"
-IMAGE_FALLBACK_MODEL = "gemini-3.1-flash-image-preview"  # 기본 모델 실패 시 대안 (None이면 비활성)
-TTS_MODEL = "gemini-2.5-flash-preview-tts"
-TTS_FALLBACK_MODEL = "gemini-2.5-pro-preview-tts"  # TTS 실패 시 대안 (None이면 비활성)
+# Vertex AI 모델 설정 (GA 모델 - API 호출 가능 확인됨)
+TEXT_MODEL = "gemini-2.5-pro"                            # 텍스트 최상위: 2.5 Pro (GA)
+TEXT_FALLBACK_MODEL = "gemini-2.5-flash"                 # 텍스트 2순위: 2.5 Flash (GA)
+IMAGE_MODEL = "gemini-2.5-flash-image"                   # 이미지 최상위: Gemini 2.5 Flash Image (GA)
+IMAGE_FALLBACK_MODEL = "gemini-2.5-flash-image-preview"  # 이미지 2순위: Gemini 2.5 Flash Image Preview
+TTS_MODEL = "gemini-2.5-pro-preview-tts"                 # TTS 최상위: 2.5 Pro TTS
+TTS_FALLBACK_MODEL = "gemini-2.5-flash-preview-tts"      # TTS 2순위: 2.5 Flash TTS
 
 # API 재시도 설정
 MAX_RETRIES = 3

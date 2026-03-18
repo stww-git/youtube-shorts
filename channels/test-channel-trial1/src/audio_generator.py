@@ -17,10 +17,9 @@ logger = logging.getLogger(__name__)
 
 class AudioGenerator:
     def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            logger.warning("GOOGLE_API_KEY not found.")
-        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
+        self.location = os.getenv("GCP_LOCATION", "us-central1")
+        self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)
         self.use_tts_fallback_mode = False  # 메인 TTS 실패 시 이후 Fallback으로 전환
         self.tts_fallback_count = 0  # Fallback 사용 횟수
 
@@ -175,7 +174,7 @@ class AudioGenerator:
                         
                         raise Exception(f"Gemini TTS failed after {MAX_RETRIES} retries: {error_str}")
 
-    def generate_speech_unified(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False, tts_style: str = ""):
+    def generate_speech_unified(self, scenes: list, output_dir: str, voice: str = None, tts_fallback: bool = False, tts_style: str = "", test_mode: bool = False):
         """
         [Unified 모드] 전체 대본을 한 번에 TTS 생성 후 silence 기반으로 분할.
         일관된 톤과 자연스러운 억양을 유지합니다.
@@ -191,6 +190,8 @@ class AudioGenerator:
         """
         voice = voice or TTS_VOICE_NAME
         
+
+
         # 0. 기존 오디오 파일 정리 (WAV만 사용, MP3 제거)
         import glob
         for pattern in ["audio_scene_*.wav", "audio_scene_*.mp3"]:
@@ -612,6 +613,61 @@ class AudioGenerator:
             chunks.append(audio[start:end])
         
         return chunks
+
+
+    def _generate_with_gtts(self, scenes: list, output_dir: str):
+        """🧪 Test Mode: gTTS로 개별 오디오 파일을 API 호출 없이 즉시 생성."""
+        import glob
+        import tempfile
+        from pydub import AudioSegment
+        
+        print(f"\n   🧪 [테스트 모드] Gemini TTS 대신 gTTS로 오디오 생성")
+        
+        for pattern in ["audio_scene_*.wav", "audio_scene_*.mp3"]:
+            for old_file in glob.glob(os.path.join(output_dir, pattern)):
+                try:
+                    os.unlink(old_file)
+                except Exception:
+                    pass
+        
+        audio_paths = []
+        for idx, scene in enumerate(scenes):
+            scene_text = scene['audio_text'].strip()
+            output_path = os.path.join(output_dir, f"audio_scene_{idx + 1}.wav")
+            
+            lang = 'en'
+            for ch in scene_text[:20]:
+                if '\u3040' <= ch <= '\u30FF' or '\u4E00' <= ch <= '\u9FFF':
+                    lang = 'ja'
+                    break
+                elif '\uAC00' <= ch <= '\uD7AF':
+                    lang = 'ko'
+                    break
+            
+            try:
+                temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+                temp_mp3_path = temp_mp3.name
+                temp_mp3.close()
+                
+                tts = gTTS(text=scene_text, lang=lang)
+                tts.save(temp_mp3_path)
+                
+                audio_seg = AudioSegment.from_mp3(temp_mp3_path)
+                audio_seg.export(output_path, format='wav')
+                os.unlink(temp_mp3_path)
+                
+                scene['audio_path'] = output_path
+                scene['duration'] = self.get_audio_duration(output_path)
+                audio_paths.append(output_path)
+                print(f"      ✅ Scene {idx + 1}: gTTS 생성 ({scene['duration']:.2f}초)")
+            except Exception as e:
+                print(f"      ❌ Scene {idx + 1}: gTTS 실패 - {e}")
+                raise
+        
+        total_duration = sum(s['duration'] for s in scenes)
+        print(f"\n   ✅ 테스트 오디오 생성 완료: {len(audio_paths)}개 파일")
+        print(f"   📏 전체 길이: {total_duration:.2f}초\n")
+        return audio_paths
 
 
 if __name__ == "__main__":

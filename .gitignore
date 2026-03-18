@@ -51,3 +51,9 @@ dmypy.json
 
 # 로컬 히스토리 파일 (환경 분리용)
 channels/*/history.local.json
+
+# GCP 서비스 계정 키 (보안 주의!)
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json

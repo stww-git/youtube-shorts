@@ -38,6 +38,16 @@ class RecipeVideoPipeline:
         self.audio_gen = AudioGenerator()
         self.composer = MotionEffectsComposer()
         print_success("All modules initialized.")
+        
+        # 모델 설정 출력
+        from config.model_config import TEXT_MODEL, TEXT_FALLBACK_MODEL, IMAGE_MODEL, IMAGE_FALLBACK_MODEL, TTS_MODEL, TTS_FALLBACK_MODEL
+        print(f"\n   {'─'*50}")
+        print(f"   📦 사용 모델 설정")
+        print(f"   {'─'*50}")
+        print(f"   📝 Text:  {TEXT_MODEL} (fallback: {TEXT_FALLBACK_MODEL})")
+        print(f"   🖼️ Image: {IMAGE_MODEL} (fallback: {IMAGE_FALLBACK_MODEL})")
+        print(f"   🎤 TTS:   {TTS_MODEL} (fallback: {TTS_FALLBACK_MODEL})")
+        print(f"   {'─'*50}\n")
 
     def run(self, test_mode: bool = False, image_parallel: bool = True, upload_to_youtube: bool = False, channel_id: str = None, tts_fallback: bool = False, privacy_status: str = "private", include_summary_card: bool = False, summary_card_duration: float = 3.0, summary_in_description: bool = False, include_disclaimer: bool = False, bgm_enabled: bool = False, bgm_volume: float = 0.1, bgm_file: str = None, subtitle_mode: str = "static", ai_subtitle_effects: bool = False, ken_burns_effect: bool = True, tts_voice_name: str = "Kore", ken_burns_zoom: float = 0.05, show_title: bool = True, summary_card_show_title: bool = True, tts_mode: str = "unified", tts_style: str = "", **kwargs):
         """
@@ -176,7 +186,7 @@ class RecipeVideoPipeline:
                 audio_paths = self.audio_gen.generate_speech_individual(scenes, output_dir, voice=tts_voice_name, tts_style=tts_style)
             else:
                 # Unified 모드 (기본값): 전체 대본을 한 번에 생성 후 무음 분할
-                audio_paths = self.audio_gen.generate_speech_unified(scenes, output_dir, voice=tts_voice_name, tts_fallback=tts_fallback, tts_style=tts_style)
+                audio_paths = self.audio_gen.generate_speech_unified(scenes, output_dir, voice=tts_voice_name, tts_fallback=tts_fallback, tts_style=tts_style, test_mode=test_mode)
         
             print_success(f"모든 오디오 생성 완료: {len(audio_paths)}/{len(scenes)}개")
             total_duration = sum(s['duration'] for s in scenes)

@@ -24,14 +24,11 @@ class RecipeTitleGenerator:
     """레시피 기반 바이럴 제목 생성기"""
     
     def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            logger.warning("GOOGLE_API_KEY not found in environment variables.")
+        self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
+        self.location = os.getenv("GCP_LOCATION", "us-central1")
         
-        self.client = None
         self.api_call_count = 0
-        if self.api_key:
-            self.client = genai.Client(api_key=self.api_key)
+        self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)
 
     def _increment_api_call(self, call_type: str = "generate_content"):
         """Increment and log API call count."""

@@ -46,7 +46,8 @@ def check_env_secrets():
     
     # 필수 시크릿
     required_secrets = {
-        'GOOGLE_API_KEY': os.getenv('GOOGLE_API_KEY'),
+        'GCP_PROJECT_ID': os.getenv('GCP_PROJECT_ID'),
+        'GCP_LOCATION': os.getenv('GCP_LOCATION'),
         'CLIENT_ID': os.getenv('CLIENT_ID'),
         'CLIENT_SECRET': os.getenv('CLIENT_SECRET'),
     }
@@ -78,7 +79,7 @@ def display_setup_guide():
     print()
     
     # 필수 시크릿 상태
-    core_secrets = ['GOOGLE_API_KEY', 'CLIENT_ID', 'CLIENT_SECRET']
+    core_secrets = ['GCP_PROJECT_ID', 'GCP_LOCATION', 'CLIENT_ID', 'CLIENT_SECRET']
     for key in core_secrets:
         value = secrets.get(key)
         status = "✅ .env에 설정됨" if value else "❌ .env에 없음"

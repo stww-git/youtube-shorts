@@ -152,14 +152,18 @@ def create_output_folder(recipe_title: str, base_output_dir: str = None) -> str:
     return output_dir
 
 def check_environment():
-    """Check if necessary API keys are present."""
+    """Check if necessary Vertex AI credentials are present."""
     import os
     import sys
     
-    required_keys = ["GOOGLE_API_KEY"]
-    missing_keys = [key for key in required_keys if not os.getenv(key)]
+    project_id = os.getenv("GCP_PROJECT_ID")
+    credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     
-    if missing_keys:
-        print(f"❌ Error: Missing API keys in .env file: {', '.join(missing_keys)}")
-        sys.exit(1)
-    print_success("Environment check passed. API keys loaded.")
+    if not project_id:
+        print("⚠️  Warning: GCP_PROJECT_ID not set, using default.")
+    
+    if credentials and os.path.exists(credentials):
+        print_success(f"Environment check passed. Vertex AI credentials loaded ({os.path.basename(credentials)}).")
+    else:
+        print_success("Environment check passed. Using ADC (Application Default Credentials).")
+

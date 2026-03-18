@@ -15,10 +15,9 @@ class ImageGenerator:
     Supports batch generation for style consistency and cost optimization.
     """
     def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            logger.warning("GOOGLE_API_KEY not found.")
-        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
+        self.location = os.getenv("GCP_LOCATION", "us-central1")
+        self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)
         self.style_guide = "high quality, cinematic lighting, 9:16 aspect ratio vertical, consistent visual style"
 
     def generate_image(self, prompt: str, output_path: str, style_guide: str = None):

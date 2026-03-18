@@ -44,23 +44,22 @@ load_dotenv()
 
 # 1. 실행할 채널 선택 (Active Channel)
 #    - 아래 CHANNELS 딕셔너리에 있는 채널 중 하나를 선택하세요.
-ACTIVE_CHANNEL = "test-channel-trial1"
+ACTIVE_CHANNEL = "sokpyeonhan"
 
 # 2. 채널별 설정 (Per-Channel Settings)
 #    - 각 채널의 테스트 모드, 업로드 여부를 개별 설정합니다.
 #    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
 CHANNELS = {
     "sokpyeonhan": {
-        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명 (GitHub Secrets)
         "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
-        "upload": True,          # True: YouTube 업로드
-        "privacy": "public",      # public / unlisted / private
+        "upload": False,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,      # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
         "ken_burns_zoom": 0.08,        # 줌 인 강도 (0.03=약하게, 0.05=보통, 0.10=강하게)
-        "tts_mode": "individual",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
+        "tts_mode": "unified",  # unified: 통합 생성 후 무음 분할 / individual: 문장별 개별 생성
         "tts_style": "Speak at a slightly faster",  # TTS 속도/스타일 지시 (빈 문자열: 기본 속도) / unified 모드에서도 적용됨
         "tts_voice_name": "Kore",  # Gemini TTS 음성 (Kore, Aoede, Charon, Fenrir, Puck 등)
 
@@ -78,7 +77,6 @@ CHANNELS = {
     },
 
     "money-bite": {
-        "api_key_env": "GOOGLE_API_KEY_2",  # 사용할 API 키 환경변수명
         "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -105,7 +103,6 @@ CHANNELS = {
     },
 
     "money-bite-us": {
-        "api_key_env": "GOOGLE_API_KEY_3",  # 사용할 API 키 환경변수명
         "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -132,7 +129,6 @@ CHANNELS = {
     },
 
     "money-bite-jp": {
-        "api_key_env": "GOOGLE_API_KEY_3",  # 사용할 API 키 환경변수명
         "enabled": False,         # True: GitHub Actions 스케줄 실행
         "test_mode": False,        # False: 실제 이미지 생성
         "upload": True,          # True: YouTube 업로드
@@ -159,7 +155,6 @@ CHANNELS = {
     },
 
     "test-channel-trial1": {
-        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": False,          # True: 스케줄 실행
         "test_mode": False,        # True: 테스트 모드
         "upload": False,          # True: 업로드
@@ -178,7 +173,6 @@ CHANNELS = {
         "tts_voice_name": "Kore",
     },
     "family-health-kr": {
-        "api_key_env": "GOOGLE_API_KEY",  # 사용할 API 키 환경변수명
         "enabled": False,          # True: 스케줄 실행
         "test_mode": True,        # True: 테스트 모드 (이미지 생성 생략)
         "upload": True,          # True: YouTube 업로드
@@ -288,14 +282,15 @@ def main():
     
     check_environment()
     
-    # 채널별 API 키 설정
-    api_key_env = channel_settings.get("api_key_env", "GOOGLE_API_KEY")
-    api_key = os.getenv(api_key_env)
-    if api_key:
-        os.environ["GOOGLE_API_KEY"] = api_key
-        print(f"   🔑 API 키: {api_key_env} 사용")
+    # Vertex AI 크레덴셜 설정
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
+    location = os.getenv("GCP_LOCATION", "us-central1")
+    if credentials_path and os.path.exists(credentials_path):
+        print(f"   🔑 Vertex AI: 서비스 계정 인증 ({os.path.basename(credentials_path)})")
     else:
-        print(f"   ⚠️  {api_key_env} 환경변수가 설정되지 않았습니다.")
+        print(f"   🔑 Vertex AI: ADC (Application Default Credentials) 사용")
+    print(f"   📍 Project: {project_id}, Location: {location}")
     
     # 채널별 Pipeline 로드 및 실행
     try:
