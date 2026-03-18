@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class AudioGenerator:
     def __init__(self):
         self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
-        self.location = os.getenv("GCP_LOCATION", "us-central1")
+        self.location = os.getenv("GCP_LOCATION", "global")
         self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)
         self.use_tts_fallback_mode = False  # 메인 TTS 실패 시 이후 Fallback으로 전환
         self.tts_fallback_count = 0  # Fallback 사용 횟수

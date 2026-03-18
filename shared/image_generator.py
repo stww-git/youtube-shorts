@@ -25,7 +25,7 @@ class ImageGenerator:
     """
     def __init__(self):
         self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
-        self.location = os.getenv("GCP_LOCATION", "us-central1")
+        self.location = os.getenv("GCP_LOCATION", "global")
         self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)
         self.style_guide = "simple 2D cartoon, flat colors, thick black outlines, 9:16 aspect ratio vertical, consistent visual style, no text"
         
@@ -352,7 +352,7 @@ class ImageGenerator:
         print(f"   총 {len(prompts)}개 장면\n")
         
         current_file = Path(__file__).resolve()
-        project_root = current_file.parent.parent.parent.parent
+        project_root = current_file.parent.parent
         test_image_path = project_root / "assets" / "test_images" / "test_placeholder.png"
         
         if not test_image_path.exists():

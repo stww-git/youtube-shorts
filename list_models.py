@@ -13,7 +13,7 @@ from google import genai
 load_dotenv()
 
 project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
-location = os.getenv("GCP_LOCATION", "us-central1")
+location = os.getenv("GCP_LOCATION", "global")
 
 client = genai.Client(vertexai=True, project=project_id, location=location)
 

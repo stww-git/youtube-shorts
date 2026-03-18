@@ -30,7 +30,7 @@ class RecipeScriptGenerator:
     
     def __init__(self):
         self.project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
-        self.location = os.getenv("GCP_LOCATION", "us-central1")
+        self.location = os.getenv("GCP_LOCATION", "global")
         
         self.api_call_count = 0
         self.client = genai.Client(vertexai=True, project=self.project_id, location=self.location)

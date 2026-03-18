@@ -51,9 +51,9 @@ ACTIVE_CHANNEL = "sokpyeonhan"
 #    - 새 채널 추가 시 add_channel.py가 자동으로 여기에 추가합니다.
 CHANNELS = {
     "sokpyeonhan": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
         "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
@@ -77,10 +77,10 @@ CHANNELS = {
     },
 
     "money-bite": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
-        "privacy": "public",      # public / unlisted / private
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
@@ -103,10 +103,10 @@ CHANNELS = {
     },
 
     "money-bite-us": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
-        "privacy": "public",      # public / unlisted / private
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
@@ -129,10 +129,10 @@ CHANNELS = {
     },
 
     "money-bite-jp": {
-        "enabled": False,         # True: GitHub Actions 스케줄 실행
-        "test_mode": True,        # False: 실제 이미지 생성
-        "upload": False,          # True: YouTube 업로드
-        "privacy": "public",      # public / unlisted / private
+        "enabled": True,         # True: GitHub Actions 스케줄 실행
+        "test_mode": False,        # False: 실제 이미지 생성
+        "upload": True,          # True: YouTube 업로드
+        "privacy": "private",      # public / unlisted / private
         "subtitle_mode": "phrase", # static / accumulate / single / stack / phrase (모드별 상세 설정: subtitle/config.py)
         "ai_subtitle_effects": True,  # True: AI가 어절별 효과 판단 / False: 기존 방식
         "ken_burns_effect": True,     # True: 이미지 천천히 줌 인 효과 / False: 정지 이미지
@@ -285,7 +285,7 @@ def main():
     # Vertex AI 크레덴셜 설정
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
     project_id = os.getenv("GCP_PROJECT_ID", "celestial-math-489909-f9")
-    location = os.getenv("GCP_LOCATION", "us-central1")
+    location = os.getenv("GCP_LOCATION", "global")
     if credentials_path and os.path.exists(credentials_path):
         print(f"   🔑 Vertex AI: 서비스 계정 인증 ({os.path.basename(credentials_path)})")
     else:
